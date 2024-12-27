@@ -149,6 +149,7 @@ class DocumentEntryCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 class DocumentEntryDeleteView(APIView):
     def delete(self, request, id):
         try:
@@ -256,3 +257,15 @@ class UserLogin(APIView):
                 {'msg': 'Invalid username or password'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Department
+from .serializers import DepartmentSerializer
+
+class DepartmentListView(APIView):
+    def get(self, request):
+        departments = Department.objects.all()
+        serializer = DepartmentSerializer(departments, many=True)
+        return Response(serializer.data)

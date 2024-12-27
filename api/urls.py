@@ -4,7 +4,7 @@ from .views import EmployeeDetailView,EmployeeCreateView,EmployeeDeleteView,Empl
 from .views import Document_outListView,Document_outCreateView,Document_outDeleteView,Document_outUpdateView
 from .views import DocumentEntryListView,DocumentEntryCreateView,DocumentEntryDeleteView,DocumentEntryUpdateView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView
-from .views import UserLogin
+from .views import UserLogin,DepartmentListView
 
 
 urlpatterns = [
@@ -31,4 +31,7 @@ urlpatterns = [
     path('add/activity/', activityCreateView.as_view(), name='activity-create'),
     path('delete/activity/<int:id>/',activityDeleteView.as_view(), name='activity-delete'),
     path('update/activity/<int:id>/',activityUpdateView.as_view(), name='activity-update'),
+
+    path('list/departments/', DepartmentListView.as_view(), name='department-list'),
+
 ]
