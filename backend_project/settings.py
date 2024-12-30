@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-t!qz%ki)b@2#z6t-$$#)_7khu30yu*pn79+@_d_hi$*n1$1-i_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.45.49']
+ALLOWED_HOSTS = ['192.168.45.71']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
 
 
 # Application definition
@@ -40,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -91,8 +93,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',  
         'NAME': 'hr_server',                      
         'USER': 'postgres',                       
-        'PASSWORD': 'lcic@123',                  
-        'HOST': '127.0.0.1',                      
+        'PASSWORD': 'Lcic@123',                  
+        'HOST': 'localhost',                      
         'PORT': '5432',                           
     }
 }
@@ -126,7 +128,7 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
+ 
 USE_TZ = True
 
 
