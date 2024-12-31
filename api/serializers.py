@@ -17,7 +17,7 @@ class Document_outSerializer(serializers.ModelSerializer):
 class DocumentEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentEntry
-        fields = '__all__'  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
+        fields = ['date', 'number', 'subject', 'section', 'receiver', 'document', 'file']  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
 
 class activitySerializer(serializers.ModelSerializer):
     class Meta:

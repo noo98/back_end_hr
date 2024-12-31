@@ -1,16 +1,24 @@
-from django.urls import path
+from django.urls import path, include
 from .views import EmployeeListAPI
 from .views import EmployeeDetailView,EmployeeCreateView,EmployeeDeleteView,EmployeeUpdateView
 from .views import Document_outListView,Document_outCreateView,Document_outDeleteView,Document_outUpdateView
 from .views import DocumentEntryListView,DocumentEntryCreateView,DocumentEntryDeleteView,DocumentEntryUpdateView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView
 from .views import UserLogin,DepartmentListView
+from .views import DocumentEntryList
+from rest_framework.routers import DefaultRouter
+from .views import DocumentEntryViewSet
+from django.conf import settings
+from django.conf.urls.static import static
 
+router = DefaultRouter()
+router.register(r'document_entries', DocumentEntryViewSet)
 
 urlpatterns = [
 
     path('login/', UserLogin.as_view(), name='user_login'),
 
+    path('api/', include(router.urls)),
     path('list/employees/', EmployeeListAPI.as_view(), name='employee-list'),
     path('detail/employee/<int:emp_id>/', EmployeeDetailView.as_view(), name='employee-detail'),
     path('add/employee/', EmployeeCreateView.as_view(), name='employee-create'),
@@ -34,4 +42,6 @@ urlpatterns = [
 
     path('list/departments/', DepartmentListView.as_view(), name='department-list'),
 
+    path('api/document-entries/', DocumentEntryList.as_view(), name='document-entry-list'),
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

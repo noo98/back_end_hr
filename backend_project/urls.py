@@ -4,11 +4,6 @@ from api.views import get_items
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-<<<<<<< HEAD
-    path('api/items/', get_items),  
-]
-=======
     path('api/items/', get_items),
     path('api/', include('api.urls')),
 ]
->>>>>>> origin/souly

@@ -16,9 +16,16 @@ from .serializers import activitySerializer
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from rest_framework import generics
+from rest_framework import viewsets
 
+class DocumentEntryViewSet(viewsets.ModelViewSet):
+    queryset = DocumentEntry.objects.all()
+    serializer_class = DocumentEntrySerializer
 
-
+class DocumentEntryList(generics.ListCreateAPIView):
+    queryset = DocumentEntry.objects.all()
+    serializer_class = DocumentEntrySerializer
 
 def get_items(request):
     items = Item.objects.all().values('id', 'name', 'description', 'price')
@@ -143,6 +150,7 @@ class DocumentEntryListView(APIView):
 class DocumentEntryCreateView(APIView):
     def post(self, request):
         # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
+        print(request.data)
         serializer = DocumentEntrySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
@@ -269,3 +277,4 @@ class DepartmentListView(APIView):
         departments = Department.objects.all()
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
+    
