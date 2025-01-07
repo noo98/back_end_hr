@@ -5,21 +5,19 @@ from django.contrib.auth import authenticate # type: ignore
 from rest_framework.views import APIView # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
-from .models import Employee_lcic
+from .models import Employee_lcic,document_lcic
 from .serializers import EmployeeSerializer  # ສ້າງ Serializer ກ່ອນ
-from .models import Document_out, UserLogin
-from .serializers import Document_outSerializer
-from .serializers import DocumentEntrySerializer
-from .models import DocumentEntry
+# from .models import Document_out, UserLogin
+# from .serializers import Document_outSerializer
+# from .serializers import DocumentEntrySerializer
+# from .models import DocumentEntry
 from .models import activity
 from .serializers import activitySerializer
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-
-
-
+from .models import Department  # Import your model
+from .serializers import DepartmentSerializer,systemloginsSerializer,document_lcicSerializer
+from .models import systemlogins,UserLogin
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
 def get_items(request):
     items = Item.objects.all().values('id', 'name', 'description', 'price')
     return Response(items)
@@ -50,7 +48,7 @@ class EmployeeDetailView(APIView):
 class EmployeeCreateView(APIView):
     
     def post(self, request):
-        permission_classes = [AllowAny]
+        permission_classes = [AllowAny] # type: ignore
         # ຮັບຂໍ້ມູນຈາກຄຳຂໍ
         serializer = EmployeeSerializer(data=request.data)
         if serializer.is_valid():
@@ -89,92 +87,54 @@ class EmployeeUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Document_outListView(APIView):
+class document_lcic_ListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
-        Document = Document_out.objects.all()
+        Document = document_lcic.objects.all()
         # ແປງຂໍ້ມູນໃຊ້ Serializer
-        serializer = Document_outSerializer(Document, many=True)
+        serializer = document_lcicSerializer(Document, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-class Document_outCreateView(APIView):
+class document_lcic_AddView(APIView):
     def post(self, request):
         # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-        serializer = Document_outSerializer(data=request.data)
+        serializer = document_lcicSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class Document_outDeleteView(APIView):
-    def delete(self, request, id):
+
+class document_lcic_UpdateView(APIView):
+    def put(self, request, doc_id):
         try:
-            # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
-            Document = Document_out.objects.get(id=id)
-            Document.delete()  # ລຶບຂໍ້ມູນຈາກ Database
-            return Response({"message": f"Document_out with ID {id} deleted successfully."}, status=status.HTTP_200_OK)
-        except Document_out.DoesNotExist:
-            return Response({"error": f"Document_out with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            # ຄົ້ນຫາ Document ທີ່ຈະອັບເດດ
+            document = document_lcic.objects.get(doc_id=doc_id)
+        except document_lcic.DoesNotExist:
+            return Response(
+                {"error": f"Document with ID {doc_id} not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-class Document_outUpdateView(APIView):
-    def put(self, request, id):
-        try:
-            # ຄົ້ນຫາ Employee ທີ່ຈະອັບເດດ
-            Document = Document_out.objects.get(id=id)
-        except Document_out.DoesNotExist:
-            return Response({"error": f"Document_out with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        # ປັບປຸງຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = Document_outSerializer(Document, data=request.data)
+        # ອັບເດດຂໍ້ມູນໃນ Database ຜ່ານ Serializer
+        serializer = document_lcicSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
-class DocumentEntryListView(APIView):
-    def get(self, request):
-        # ດຶງຂໍ້ມູນທັງໝົດ
-        Document = DocumentEntry.objects.all()
-        # ແປງຂໍ້ມູນໃຊ້ Serializer
-        serializer = DocumentEntrySerializer(Document, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-class DocumentEntryCreateView(APIView):
-    def post(self, request):
-        # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-        serializer = DocumentEntrySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        
 
-class DocumentEntryDeleteView(APIView):
-    def delete(self, request, id):
+class document_lcic_DeleteView(APIView):
+    def delete(self, request, doc_id):
         try:
             # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
-            Document = DocumentEntry.objects.get(id=id)
+            Document = document_lcic.objects.get(doc_id=doc_id)
             Document.delete()  # ລຶບຂໍ້ມູນຈາກ Database
-            return Response({"message": f"DocumentEntry with ID {id} deleted successfully."}, status=status.HTTP_200_OK)
-        except DocumentEntry.DoesNotExist:
-            return Response({"error": f"DocumentEntry with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": f"document_lcic with ID {doc_id} deleted successfully."}, status=status.HTTP_200_OK)
+        except document_lcic.DoesNotExist:
+            return Response({"error": f"document_lcic with ID {doc_id} not found."}, status=status.HTTP_404_NOT_FOUND)
         
-class DocumentEntryUpdateView(APIView):
-    def put(self, request, id):
-        try:
-            # ຄົ້ນຫາ Employee ທີ່ຈະອັບເດດ
-            Document = DocumentEntry.objects.get(id=id)
-        except DocumentEntry.DoesNotExist:
-            return Response({"error": f"DocumentEntry with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        # ປັບປຸງຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = DocumentEntrySerializer(Document, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 class activityListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
@@ -218,54 +178,153 @@ class activityUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-from .models import UserLogin as UserLoginModel  # Alias for the model
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.hashers import check_password
-
-class UserLogin(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, format=None):
-        data = request.data
-        username = data.get('username')
-        password = data.get('password')  # Use "password" instead of "password_hash"
-
-        # Check for missing fields
-        if not username or not password:
-            return Response(
-                {'msg': 'Username and password are required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            # Fetch user by username
-            user = UserLoginModel.objects.get(username=username,password_hash=password)
-
-
-            # On successful authentication
-            return Response(
-                {'msg': 'Login successful', 'redirect_url': '/'},
-                status=status.HTTP_200_OK
-            )
-        
-
-        except UserLoginModel.DoesNotExist:
-            return Response(
-                {'msg': 'Invalid username or password'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import Department
-from .serializers import DepartmentSerializer
-
 class DepartmentListView(APIView):
     def get(self, request):
         departments = Department.objects.all()
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
+
+class LoginlistView(APIView):
+    def get(self, request):
+        user = systemlogins.objects.all()  # ດຶງຂໍ້ມູນທັງໝົດ
+        serializer = systemloginsSerializer(user, many=True)  # ຕັ້ງ `many=True` ສຳລັບລາຍການທັງໝົດ
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class LoginaddView(APIView):
+    # def post(self, request):
+    #     # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
+    #     serializer = systemloginsSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request):
+        try:
+            # Get data from request
+            data = request.data
+            password = data.get("password")
+
+            # Hash the password before saving
+            if password:
+                data["password"] = make_password(password)
+
+            # Serialize the data
+            serializer = systemloginsSerializer(data=data)
+
+            # Validate and save the new user
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"message": "User created successfully", "user": serializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+class UpdateUserView(APIView):
+    def put(self, request, user_id):
+        try:
+            # Fetch the user by ID
+            user = systemlogins.objects.get(user_id=user_id)
+            
+            # Get data from request
+            data = request.data
+            password = data.get("password")
+
+            # Update username if provided
+            if "username" in data:
+                user.username = data["username"]
+
+            # Hash and update the password if provided
+            if password:
+                user.password = make_password(password)
+
+            # Save the updated user
+            user.save()
+
+            # Serialize the updated user
+            serializer = systemloginsSerializer(user)
+            return Response(
+                {"message": "User updated successfully", "user": serializer.data},
+                status=status.HTTP_200_OK,
+            )
+        except systemlogins.DoesNotExist:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DeleteUserView(APIView):
+    def delete(self, request, user_id, *args, **kwargs):
+        try:
+            # ค้นหาผู้ใช้ตาม user_id
+            user = systemlogins.objects.get(user_id=user_id)
+
+            # ลบผู้ใช้
+            user.delete()
+            return Response(
+                {"message": f"ຜູ້ໃຊ້ທີ່ມີ ID {user_id} ຖືກລົບສຳເລັດ"},
+                status=status.HTTP_200_OK,
+            )
+        except systemlogins.DoesNotExist:
+            return Response(
+                {"error": "ບໍ່ພົບຜູ້ໃຊ້ທີ່ຕ້ອງການລົບ"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"ມີຄວາມຜິດພາດ: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+class LoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            # ดึงข้อมูล username และ password จาก request
+            username = request.data.get("username")
+            password = request.data.get("password")
+
+            # ตรวจสอบว่าข้อมูลถูกต้อง
+            if not username or not password:
+                return Response(
+                    {"error": "ຕ້ອງການຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # ค้นหาผู้ใช้ในฐานข้อมูล
+            try:
+                user = systemlogins.objects.get(username=username)
+
+                # ตรวจสอบรหัสผ่าน
+                if check_password(password, user.password):
+                    return Response(
+                        {"message": "ເຂົ້າລະບົບສຳເລັດ", "user": username},
+                        status=status.HTTP_200_OK,
+                    )
+                else:
+                    return Response(
+                        {"error": "ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ"},
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
+            except systemlogins.DoesNotExist:
+                return Response(
+                    {"error": "ຊື່ຜູ້ໃຊ້ບໍ່ຖືກຕ້ອງ"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        except Exception as e:
+            return Response(
+                {"error": f"ມີຄວາມຜິດພາດ: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,)

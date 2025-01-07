@@ -44,7 +44,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 ]
+# INSTALLED_APPS += ['corsheaders']
+# MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
+# CORS_ALLOWED_ORIGINS = [
+#     "http://192.168.45.71:8000",  # เพิ่ม URL ของ Frontend
+# ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -56,6 +61,13 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+]
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
 ROOT_URLCONF = 'backend_project.urls'
@@ -94,7 +106,7 @@ DATABASES = {
         'NAME': 'hr_server',                      
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
-        'HOST': 'localhost',                      
+        'HOST': '192.168.45.71',                      
         'PORT': '5432',                           
     }
 }
@@ -131,6 +143,8 @@ USE_I18N = True
  
 USE_TZ = True
 
+DEBUG = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -142,5 +156,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    'http://192.168.45.49:8001',  
+    'http://192.168.45.49:8000',  
 ]

@@ -1,22 +1,16 @@
 from rest_framework import serializers # type: ignore
 from .models import Employee_lcic
-from .models import Document_out,DocumentEntry,activity
-from .models import UserLogin,Department
+# from .models import Documentout,Documentin
+from .models import systemlogins,Department,activity,document_lcic
 
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee_lcic
         fields = '__all__'
 
-
-class Document_outSerializer(serializers.ModelSerializer):
+class document_lcicSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Document_out
-        fields = '__all__'  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
-
-class DocumentEntrySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DocumentEntry
+        model = document_lcic
         fields = '__all__'  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
 
 class activitySerializer(serializers.ModelSerializer):
@@ -25,9 +19,9 @@ class activitySerializer(serializers.ModelSerializer):
         fields = '__all__'  # ຄືນຄ່າທຸກ field ຂອງ model
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
+class systemloginsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserLogin
+        model = systemlogins
         fields = ['user_id', 'username', 'password']
 
 class DepartmentSerializer(serializers.ModelSerializer):
