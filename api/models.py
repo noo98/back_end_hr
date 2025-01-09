@@ -115,6 +115,6 @@ class document_lcic(models.Model):
     section = models.CharField(max_length=255, blank=True, null=True)
     doc_type = models.CharField(max_length=255, blank=True, null=True)
     file = models.CharField(max_length=255, blank=True, null=True)
-    department = models.CharField(max_length=255, blank=True, null=True)
+    department =  models.ForeignKey(Department, on_delete=models.CASCADE)
     document_detail = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)

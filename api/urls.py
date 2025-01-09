@@ -2,8 +2,9 @@ from django.urls import path
 from .views import EmployeeListAPI
 from .views import EmployeeDetailView,EmployeeCreateView,EmployeeDeleteView,EmployeeUpdateView
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_DeleteView
-from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView
+from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
 from .views import UserLogin,DepartmentListView,LoginView,LoginlistView,LoginaddView,DeleteUserView,UpdateUserView
+from .views import Department_AddView,Department_UpdateView,Department_DeleteView
 
 urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
@@ -25,9 +26,14 @@ urlpatterns = [
     path('update/activity/<int:id>/',activityUpdateView.as_view(), name='activity-update'),
 
     path('list/departments/', DepartmentListView.as_view(), name='department-list'),
+    path('add/departments/', Department_AddView.as_view(), name='departments-add'),
+    path('update/departments/<int:id>/', Department_UpdateView.as_view(), name='update-departments'),
+    path('delete/departments/<int:id>/', Department_DeleteView.as_view(), name='delete-departments'),
 
     path('list/login/', LoginlistView.as_view(), name='Loginl-list'),
     path('add/login/', LoginaddView.as_view(), name='Loginl-add'),
     path('update/login/<int:user_id>/', UpdateUserView.as_view(), name='update-user'),
     path('delete/login/<int:user_id>/', DeleteUserView.as_view(), name='delete-user'),
+
+    path('search/document_lcic/', document_lcic_SearchView.as_view(), name='search-document'),
 ]

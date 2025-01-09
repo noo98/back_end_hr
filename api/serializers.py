@@ -9,9 +9,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class document_lcicSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True)  # ດຶງຊື່ພະແນກ
     class Meta:
         model = document_lcic
-        fields = '__all__'  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
+        fields = ['doc_id','insert_date','doc_number','subject','section','doc_type','department_name','document_detail','name']  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
 
 class activitySerializer(serializers.ModelSerializer):
     class Meta:

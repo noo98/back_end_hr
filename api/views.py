@@ -184,6 +184,45 @@ class DepartmentListView(APIView):
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
 
+class Department_AddView(APIView):
+    def post(self, request):
+        # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
+        serializer = DepartmentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class Department_UpdateView(APIView):
+    def put(self, request, id):
+        try:
+            # ຄົ້ນຫາ Document ທີ່ຈະອັບເດດ
+            document = Department.objects.get(id=id)
+        except Department.DoesNotExist:
+            return Response(
+                {"error": f"Document with ID {id} not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # ອັບເດດຂໍ້ມູນໃນ Database ຜ່ານ Serializer
+        serializer = DepartmentSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class Department_DeleteView(APIView):
+    def delete(self, request, id):
+        try:
+            # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
+            Document = Department.objects.get(id=id)
+            Document.delete()  # ລຶບຂໍ້ມູນຈາກ Database
+            return Response({"message": f"Department with ID {id} deleted successfully."}, status=status.HTTP_200_OK)
+        except Department.DoesNotExist:
+            return Response({"error": f"Department with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
 class LoginlistView(APIView):
     def get(self, request):
         user = systemlogins.objects.all()  # ດຶງຂໍ້ມູນທັງໝົດ
@@ -191,14 +230,6 @@ class LoginlistView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class LoginaddView(APIView):
-    # def post(self, request):
-    #     # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-    #     serializer = systemloginsSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def post(self, request):
         try:
             # Get data from request
@@ -226,7 +257,7 @@ class LoginaddView(APIView):
                 {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
+        
 class UpdateUserView(APIView):
     def put(self, request, user_id):
         try:
@@ -328,3 +359,40 @@ class LoginView(APIView):
             return Response(
                 {"error": f"ມີຄວາມຜິດພາດ: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,)
+        
+#ວິທີທົດສອບການຄັ້ນຫາ: http://127.0.0.1:8000/api/search/document_lcic/?start_date=2025-01-01&end_date=2025-01-07&department=HR&doc_type=Report
+
+class document_lcic_SearchView(APIView):
+    def get(self, request):
+        # ດືງຄ່າຄົ້ນຫາຈາກ Query Parameters
+        search_query = request.query_params.get('q', None)  # ຄົ້ນຫາຂໍ້ມູນໂດຍ subject
+        start_date = request.query_params.get('start_date', None)  # ວັນທີເລີ່ມຕົ້ນ
+        end_date = request.query_params.get('end_date', None)  # ວັນທີສິ້ນສຸດ
+        department = request.query_params.get('department', None)  # ພະແນກ
+        doc_type = request.query_params.get('doc_type', None)  # ປະເພດຂອງເອກະສານ
+
+        # ສ້າງ Query ສຳລັບຄົ້ນຫາ
+        filters = {}
+        if search_query:
+            filters['subject__icontains'] = search_query
+        if department:
+            filters['department__icontains'] = department
+        if doc_type:
+            filters['doc_type__icontains'] = doc_type
+
+        # ຄົ້ນຫາຂໍ້ມູນຕາມຊ່ວງວັນທີ
+        if start_date and end_date:
+            filters['insert_date__range'] = [start_date, end_date]
+
+        # ຄົ້ນຫາຂໍ້ມູນຈາກ Model ດ້ວຍ Filters
+        documents = document_lcic.objects.filter(**filters)
+
+        # ຕວງສອບຂໍ້ມູນທີ່ຄົ້ນຫາ
+        if documents.exists():
+            serializer = document_lcicSerializer(documents, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"message": "No documents found matching your search query."},
+            status=status.HTTP_404_NOT_FOUND
+        )
