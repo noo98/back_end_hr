@@ -43,7 +43,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt'
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        "api.authentication.CustomJWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ),
+}
+
+
 # INSTALLED_APPS += ['corsheaders']
 # MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
@@ -107,7 +119,12 @@ DATABASES = {
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
         'HOST': '192.168.45.71',                      
-        'PORT': '5432',                           
+        'PORT': '5432',
+        'OPTIONS': {'client_encoding': 'UTF8'},            
+         'TEST': {
+            'CHARSET': 'utf8',
+            'COLLATION': 'utf8_general_ci',
+        },               
     }
 }
 
@@ -156,5 +173,12 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    'http://192.168.45.49:8000',  
+    'http://192.168.45.49:3000',  
 ]
+
+
+import os
+
+MEDIA_URL = '/media/'  # URL ສໍາລັບເປີດຟາຍ
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # ທີ່ຢູ່ຂອງຟາຍ
+

@@ -1,37 +1,44 @@
 from django.db import models
+# from django.contrib.auth.models import User
 
 class Item(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-class UserLogin(models.Model):
-    user_id = models.AutoField(primary_key=True)
-    username = models.CharField(unique=True, max_length=50)
-    password = models.CharField(max_length=255)
+class SystemUser(models.Model):
+    us_id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=255)  # Store hashed passwords
+    Department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    Employee =  models.ForeignKey('Employee_lcic', on_delete=models.CASCADE) # ພະແນກ
+    status = models.IntegerField()
 
-    class Meta:
-        managed = False
-        db_table = 'user_login'
+    def __str__(self):
+        return self.username
+
+class Sidebar(models.Model):
+    sid_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+    url = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
 
 class Employee_lcic(models.Model):
-    emp_id = models.AutoField(primary_key=True)  # Employee ID (Auto-increment)
-    gender = models.CharField(max_length=10)  # Gender (e.g., Male, Female)
-    name_E = models.CharField(max_length=100)  # English name
-    name_L = models.CharField(max_length=100)  # Lao name
-    nickname = models.CharField(max_length=50)  # Nicknam
-    date_of_birth = models.DateField()  # ວັນເດືອນປີເກີດ (Date of birth)
-    employment_date = models.DateField()  # ວັນເຂົ້າການ (Date of joining)
-    percent_95 = models.DateField(null=True, blank=True)  # 95% status
-    youth_reserve = models.DateField()  # ພັກສຳຮອງ
-    youth_full = models.DateField()  # ພັກສົມບູນ
-    labor_union = models.DateField()  # ກຳມະບານ
-    phone = models.CharField(max_length=15)  # ເບີຕິດຕໍ່ (Phone number)
-    home_address = models.CharField(max_length=255)  # ບ້ານເກີດ (Home address)
-    current_address = models.CharField(max_length=255)  # ບ້ານປັດຈຸບັນ (Current address)
-    field_of_study = models.CharField(max_length=100)  # ວິຊາສະເພາະ (Specialization
-    employment_years = models.IntegerField()  # ປີການ (Years of employment)
-    
+    emp_id = models.AutoField(primary_key=True)  # ລະຫັດພະນັກງານ
+    lao_name = models.CharField(max_length=100)  # ຊື່ພາສາລາວ
+    eng_name = models.CharField(max_length=100)  # ຊື່ພາສາອັງກິດ
+    nickname = models.CharField(max_length=50, blank=True, null=True)  # ຊື່ຫຼິ້ນ
+    Gender = models.CharField(max_length=100)  #ເພດ
+    birth_date = models.CharField(max_length=100, blank=True, null=True) # ວັນເດືອນປີເກີດ
+    status = models.CharField(max_length=20)  # ສະຖານະພາບ (ເຊັ່ນ ໂສດ, ແຕ່ງງານ)
+    Department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    position = models.CharField(max_length=100)  # ຕຳແໜ່ງ
+    years_of_service = models.CharField()  # ປີການເຮັດວຽກ
+    salary_level = models.CharField(max_length=100)# ຂັ້ນເງິນເດືອນ
+    phone = models.CharField(max_length=20)  # ເບີໂທ
+    pic = models.ImageField(blank=True, null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
 
     def __str__(self):
         return f"{self.emp_id} - {self.name_E} ({self.nickname})"
@@ -63,9 +70,10 @@ class EducationLevel(models.Model):
         return self.name
     
 class Status(models.Model):
-    id = models.AutoField(primary_key=True)
+    sta_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
-
+    icon = models.CharField(max_length=255)
+    Sidebar = models.ManyToManyField('Sidebar', related_name='status_roles', blank=True)
     def __str__(self):
         return self.name
     
@@ -102,19 +110,75 @@ class Village(models.Model):
     Vill_ID = models.CharField(max_length=255, blank=True, null=True)
     Village_Name = models.CharField(max_length=2500, blank=True, null=True)
 
-class systemlogins(models.Model):
-    user_id = models.AutoField(primary_key=True)
-    username = models.CharField(unique=True, max_length=50)
-    password = models.CharField(max_length=255)
+
+class Document_type(models.Model):
+    dmt_id = models.AutoField(primary_key=True)
+    name = models.CharField(unique=True, max_length=100)
+
+class Document_format(models.Model):
+    dmf_id = models.AutoField(primary_key=True)
+    name = models.CharField(unique=True, max_length=250)
 
 class document_lcic(models.Model):
-    doc_id = models.AutoField(primary_key=True)
-    insert_date = models.CharField(max_length=100, blank=True, null=True)
-    doc_number = models.CharField(max_length=100, blank=True, null=True)
-    subject = models.CharField(max_length=255, blank=True, null=True)
-    section = models.CharField(max_length=255, blank=True, null=True)
-    doc_type = models.CharField(max_length=255, blank=True, null=True)
-    file = models.CharField(max_length=255, blank=True, null=True)
-    department =  models.ForeignKey(Department, on_delete=models.CASCADE)
-    document_detail = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
+    doc_id = models.AutoField(primary_key=True) # ລະຫັດເອກະສານ
+    insert_date = models.CharField(max_length=100, blank=True, null=True) # ວັນທີ່ເພີ່ມ
+    doc_number = models.CharField(max_length=100, blank=True, null=True) # ເລກທີເອກະສານ
+    subject = models.CharField(max_length=255, blank=True, null=True) # ເລື່ອງ
+    format = models.ForeignKey(Document_format, on_delete=models.CASCADE) # ຮູບແບບ
+    doc_type = models.CharField(max_length=255, blank=True, null=True) # ປະເພດເອກະສານ(ຂາເຂົ້າ, ຂາອອກ, ອື່ນໆ)
+    doc_type_info = models.CharField(max_length=255, blank=True, null=True) # ປະເພດເອກະສານ ທີສົ່ງໃຫ້ພະແນກອື່ນ (ຂາເຂົ້າ, ຂາອອກ,)
+    file = models.FileField(upload_to='documents/',null=True) # ໄຟລແທນ
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='document_lcic_department')
+    document_detail = models.CharField(max_length=255, blank=True, null=True) # ລາຍລະອຽດ
+    name = models.CharField(max_length=255, blank=True, null=True) # ຜູ້ສ້າງ
+    department_into = models.ManyToManyField('Department', related_name='document_lcic_department_into', blank=True)  # ພະແນກທີ່ສົ່ງໃຫ້
+    status = models.CharField(max_length=10, choices=[('new', 'ໃໝ່'), ('viewed', 'ເບີ່ງແລ້ວ')], default='new')# ສະຖານະຂອງເອກະສານ
+
+class document_general(models.Model):
+    docg_id = models.AutoField(primary_key=True) # ລະຫັດເອກະສານ
+    insert_date = models.CharField(max_length=100, blank=True, null=True) # ວັນທີ່ເພີ່ມ
+    doc_number = models.CharField(max_length=100, blank=True, null=True) # ເລກທີເອກະສານ
+    subject = models.CharField(max_length=255, blank=True, null=True) # ເລື່ອງ
+    format = models.ForeignKey(Document_format, on_delete=models.CASCADE) # ຮູບແບບ
+    file = models.FileField(upload_to='documents_general/',null=True) # ໄຟລແທນ
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='document_lcic_general') # ພະແນກ
+    document_detail = models.CharField(max_length=255, blank=True, null=True) # ລາຍລະອຽດ
+    name = models.CharField(max_length=255, blank=True, null=True) # ຜູ້ສ້າງ
+
+class PersonalInformation(models.Model):
+    per_id = models.AutoField(primary_key=True)  # ລະຫັດຂໍ້ມູນບຸກຄົນ
+    full_name = models.CharField(max_length=255)  # ຊື່ເຕັມ
+    dob = models.CharField(max_length=100)  # ວັນເກີດ
+    eth = models.CharField(max_length=100)  # ຊົນເຜົ່າ
+    rel = models.CharField(max_length=100)  # ສາສະໜາ
+    b_vill = models.CharField(max_length=100)  # ບ້ານເກີດ
+    b_dist = models.CharField(max_length=100)  # ເມືອງເກີດ
+    b_prov = models.CharField(max_length=100)  # ແຂວງເກີດ
+    c_vill = models.CharField(max_length=100)  # ບ້ານປັດຈຸບັນ
+    c_dist = models.CharField(max_length=100)  # ເມືອງປັດຈຸບັນ
+    c_prov = models.CharField(max_length=100)  # ແຂວງປັດຈຸບັນ
+    gov_entry = models.CharField(max_length=100)  # ວັນເຂົ້າສັງກັດລັດ(ພະນັກງານສົມບູນ)
+    youth_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກຊາວໝຸ່ມ
+    women_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກແມ່ຍິງ
+    union_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກກຳມະບານ
+    party_cand_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກພັັກສຳຮອງ
+    full_party_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກພັກສົມບູນ
+    curr_party_pos = models.CharField(max_length=255, null=True, blank=True)  # ຕຳແໜ່ງຂອງພັກປັດຈຸບັນ
+    party_apt_date = models.DateField(null=True, blank=True)  # ວັນທີເດືອນປີແຕ່ງຕັ້ງຄຕຳແໜ່ງຂອງພັກ
+    curr_gov_pos = models.CharField(max_length=255, null=True, blank=True)  # ຕຳແໜ່ງເບື່ອງລັດປັດຈຸບັນ
+    gov_apt_date = models.DateField(null=True, blank=True)  # ວັນທີເດືອນປີແຕ່ງຕັ້ງຕຳແໜ່ງຂອງລັດ
+
+class Education(models.Model):
+    per_id = models.ForeignKey(PersonalInformation, on_delete=models.CASCADE)  # ບຸກຄົນ
+    level = models.CharField(max_length=255)  # ຂັ້ນ
+    school = models.CharField(max_length=255)  # ຊື່ໂຮງຮຽນ
+    year = models.IntegerField()  # ປີ
+    dom_abrd = models.CharField(max_length=50)  # ພາຍໃນ/ຕ່າງປະເທດ
+
+class SpecializedEducation(models.Model):
+    per_id = models.ForeignKey(PersonalInformation, on_delete=models.CASCADE)  # ບຸກຄົນ
+    field = models.CharField(max_length=255)  # ຂະແໜງສຶກສາ
+    inst = models.CharField(max_length=255)  # ສະຖາບັນ
+    level = models.CharField(max_length=100)  # ຂັ້ນ
+    year = models.IntegerField()  # ປີ
+    dom_abrd = models.CharField(max_length=50)  # ພາຍໃນ/ຕ່າງປະເທດ
