@@ -63,8 +63,29 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
 class DocumentFormatSerializer(serializers.ModelSerializer):
     class Meta:
+<<<<<<< HEAD
         model = Document_format
         fields = ['dmf_id', 'name']
+=======
+        model = Document_out
+        fields = '__all__'  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
+
+class DocumentEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentEntry
+        fields = ['date', 'number', 'subject', 'section', 'receiver', 'document', 'file']  # ຫຼືລະບຸຟິວທີ່ຈະສົ່ງຄືນ
+
+class activitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = activity
+        fields = '__all__'  # ຄືນຄ່າທຸກ field ຂອງ model
+
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserLogin
+        fields = ['user_id', 'username', 'password']
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
