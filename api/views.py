@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from django.shortcuts import render
 from django.http import HttpResponse # type: ignore
 from .models import Item
@@ -137,7 +138,7 @@ class document_lcic_UpdateView(APIView):
             )
         
         # ອັບເດດຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = document_lcicSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
+        serializer = document_lcic_addSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -351,22 +352,23 @@ class Document_format_DeleteView(APIView):
 
 class UserView(APIView):
 
-    def get(self, request, username=None):
-            # authentication_classes = [CustomJWTAuthentication]  # Use custom authentication
-            # permission_classes = [IsAuthenticated]  # Require authentication
-            if username:  # If us_id is provided, fetch the specific user
-                try:
-                    user = SystemUser.objects.get(username=username)
-                    serializer = SystemUserSerializer(user) 
-                    return Response(serializer.data, status=status.HTTP_200_OK)
-                except SystemUser.DoesNotExist:
-                    return Response({"error": "SystemUser not found"}, status=status.HTTP_404_NOT_FOUND)
-                except Exception as e:
-                    return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:  # If no us_id is provided, fetch all users
+    def get(self, request, us_id=None, username=None):
+        try:
+            if us_id:
+                user = SystemUser.objects.get(us_id=us_id)
+            elif username:
+                user = SystemUser.objects.get(username=username)
+            else:
                 users = SystemUser.objects.all()
                 serializer = SystemUserSerializer(users, many=True)
-                return Response(serializer.data)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            
+            serializer = SystemUserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except SystemUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
         try:
@@ -392,31 +394,33 @@ class UserView(APIView):
             )
 
     def put(self, request, us_id):
-        try:
-            user = SystemUser.objects.get(us_id=us_id)
-            data = request.data
-            password = data.get("password")
+        user = get_object_or_404(SystemUser, us_id=us_id)  # Replaces try-except for DoesNotExist
+        data = request.data
+        updated = False  # Track if we made changes
 
-            if "username" in data:
-                user.username = data["username"]
-            if password:
-                user.password = make_password(password)
+        # Update username if provided
+        username = data.get("username")
+        if username:
+            user.username = username
+            updated = True
 
+        # Update password securely if provided
+        password = data.get("password")
+        if password:
+            user.password = make_password(password)  # Hash before saving
+            updated = True
+
+        if updated:  # Save only if changes were made
             user.save()
             serializer = SystemUserSerializer(user)
             return Response(
                 {"message": "User updated successfully", "user": serializer.data},
                 status=status.HTTP_200_OK,
             )
-        except SystemUser.DoesNotExist:
+        else:
             return Response(
-                {"error": "User not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            return Response(
-                {"error": f"An unexpected error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"message": "No changes detected"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     def delete(self, request, us_id):
@@ -540,6 +544,51 @@ class document_lcic_SearchView(APIView):
             status=status.HTTP_404_NOT_FOUND
         )
 
+class document_general_SearchView(APIView):
+    def get(self, request):
+        search_query = request.query_params.get('subject', None)
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
+        department = request.query_params.get('department', None)
+        department_id = request.query_params.get('department_id', None)
+        doc_type = request.query_params.get('doc_type', None)
+        format_name = request.query_params.get('format', None)
+
+        documents = document_general.objects.all()
+
+        if search_query:
+            documents = documents.filter(subject__icontains=search_query)
+        if department:
+            documents = documents.filter(department__name__icontains=department)
+        if department_id:
+            documents = documents.filter(department__id=department_id)
+        if doc_type:
+            documents = documents.filter(doc_type__icontains=doc_type)
+        if format_name:
+            documents = documents.filter(format__name__icontains=format_name)
+
+        # Handle date range filtering only if insert_date is a DateField
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+                documents = documents.filter(insert_date__gte=start_date)
+            except ValueError:
+                return Response({"message": "Invalid start_date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+                documents = documents.filter(insert_date__lte=end_date)
+            except ValueError:
+                return Response({"message": "Invalid end_date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if documents.exists():
+            serializer = document_general_Serializer(documents, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"message": "No documents found matching your search query."}, status=status.HTTP_404_NOT_FOUND)
+
+
 class EmployeeInfoAPI(APIView):
     def get(self, request):
         users = SystemUser.objects.select_related('Department', 'Employee').all()
@@ -582,11 +631,11 @@ class document_general_View(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, emp_id):
+    def put(self, request, docg_id):
         try:
-            doc = document_general.objects.get(emp_id=emp_id)
+            doc = document_general.objects.get(docg_id=docg_id)
         except document_general.DoesNotExist:
-            return Response({"error": f"document_general with ID {emp_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": f"document_general with ID {docg_id} not found."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = document_general_Serializer(doc, data=request.data, partial=True)
         if serializer.is_valid():
@@ -594,89 +643,229 @@ class document_general_View(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, emp_id):
+    def delete(self, request, docg_id):
         try:
             # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
-            doc = document_general.objects.get(emp_id=emp_id)
+            doc = document_general.objects.get(docg_id=docg_id)
             doc.delete()  # ລຶບຂໍ້ມູນຈາກ Database
-            return Response({"message": f"document_general with ID {emp_id} deleted successfully."}, status=status.HTTP_200_OK)
+            return Response({"message": f"document_general with ID {docg_id} deleted successfully."}, status=status.HTTP_200_OK)
         except document_general.DoesNotExist:
-            return Response({"error": f"document_general with ID {emp_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": f"document_general with ID {docg_id} not found."}, status=status.HTTP_404_NOT_FOUND)
         
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import PersonalInformation, Education
-from .serializers import PersonalInformationSerializer, EducationSerializer
+
+from .models import (PersonalInformation, Education,SpecializedEducation, PoliticalTheoryEducation, ForeignLanguage, WorkExperience, 
+                     TrainingCourse, Award, DisciplinaryAction, FamilyMember, Evaluation)
+from .serializers import (PersonalInformationSerializer, EducationSerializer, SpecializedEducationSerializer, AwardSerializer,
+                          PoliticalTheoryEducationSerializer, ForeignLanguageSerializer, WorkExperienceSerializer, TrainingCourseSerializer,DisciplinaryActionSerializer,
+                          FamilyMemberSerializer, EvaluationSerializer)
+import logging
+from django.db import transaction 
+from rest_framework.generics import get_object_or_404
+from typing import Optional
 from django.db import transaction
-
+logger = logging.getLogger(__name__)
 class PersonalEducationCreateView(APIView):
-    # authentication_classes = [CustomJWTAuthentication]  # Use custom authentication
-    # permission_classes = [IsAuthenticated]  # Require authentication
-    def get(self, request):
-        # Get all personal information
-        personal_data = PersonalInformation.objects.all()
-        personal_serializer = PersonalInformationSerializer(personal_data, many=True)
-
-        result = []
-        for person in personal_serializer.data:
-            # Get related education records
-            education_data = Education.objects.filter(per_id=person['per_id'])
-            education_serializer = EducationSerializer(education_data, many=True)
-            
-            # Combine personal and education data
-            person_info = {
-                "personal_information": person,
-                "education": education_serializer.data
-            }
-            result.append(person_info)
-
-        return Response(result, status=status.HTTP_200_OK)
-        
-    def post(self, request):
-        personal_data = request.data.get('personal_information')
-        education_data = request.data.get('education')
-
-        # Validate and save PersonalInformation
-        personal_serializer = PersonalInformationSerializer(data=personal_data)
-        if personal_serializer.is_valid():
-            personal_instance = personal_serializer.save()
+    def get(self, request, per_id: Optional[int] = None):
+        if per_id:
+            personal_instances = PersonalInformation.objects.filter(per_id=per_id)
         else:
-            return Response(personal_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            personal_instances = PersonalInformation.objects.all()
+        response_data = []
+        for personal_instance in personal_instances:
+            per_id = personal_instance.per_id
+            education_instances = Education.objects.filter(per_id=per_id)
+            specialized_instances = SpecializedEducation.objects.filter(per_id=per_id)
+            political_instances = PoliticalTheoryEducation.objects.filter(per_id=per_id)
+            language_instances = ForeignLanguage.objects.filter(per_id=per_id)
+            work_instances = WorkExperience.objects.filter(per_id=per_id)
+            training_instances = TrainingCourse.objects.filter(per_id=per_id)
+            award_instances = Award.objects.filter(per_id=per_id)
+            disciplinary_instances = DisciplinaryAction.objects.filter(per_id=per_id)
+            family_instances = FamilyMember.objects.filter(per_id=per_id)
+            evaluation_instance = Evaluation.objects.filter(per_id=per_id).first()
+            response_data.append({
+                "personal_information": PersonalInformationSerializer(personal_instance).data,
+                "education": EducationSerializer(education_instances, many=True).data,
+                "specialized_education": SpecializedEducationSerializer(specialized_instances, many=True).data,
+                "political_theory_education": PoliticalTheoryEducationSerializer(political_instances, many=True).data,
+                "foreign_languages": ForeignLanguageSerializer(language_instances, many=True).data,
+                "work_experiences": WorkExperienceSerializer(work_instances, many=True).data,
+                "training_courses": TrainingCourseSerializer(training_instances, many=True).data,
+                "awards": AwardSerializer(award_instances, many=True).data,
+                "disciplinary_actions": DisciplinaryActionSerializer(disciplinary_instances, many=True).data,
+                "family_members": FamilyMemberSerializer(family_instances, many=True).data,
+                "evaluation": EvaluationSerializer(evaluation_instance).data if evaluation_instance else None
+            })
 
-        # Validate and save Education
-        for edu in education_data:
-            edu['per_id'] = personal_instance.per_id  # Attach personal FK
-            education_serializer = EducationSerializer(data=edu)
-            if education_serializer.is_valid():
-                education_serializer.save()
-            else:
-                return Response(education_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    def save_related_data(self, serializer_class, dataset, per_id):
+        try:
+            for item in dataset:
+                item["per_id"] = per_id
+            serializer = serializer_class(data=dataset, many=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        except Exception as e:
+            logger.error(f"Error saving {serializer_class.__name__}: {e}")
+            raise e
 
-        return Response(
-            {"message": "saved successfully"},
-            status=status.HTTP_201_CREATED
-        )
-    def delete(self, request, per_id):
-            try:
-                with transaction.atomic():  # Ensure atomicity
-                    # Get the personal information record
-                    personal_instance = PersonalInformation.objects.get(per_id=per_id)
-                    
-                    # Delete related education records
-                    Education.objects.filter(per_id=per_id).delete()
-                    
-                    # Delete personal information record
-                    personal_instance.delete()
-                    
-                return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-            
-            except PersonalInformation.DoesNotExist:
-                return Response({"error": "Personal information not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+    def post(self, request):
+        data = request.data or {}
+
+        personal_data_list = data.get('PersonalInformation', [])
+        if not personal_data_list:
+            return Response({"error": "ຂໍ້ມູນບໍ່ຖືກຮູບແບບ"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                personal_data = personal_data_list[0]
+                personal_serializer = PersonalInformationSerializer(data=personal_data)
+                personal_serializer.is_valid(raise_exception=True)
+                personal_instance = personal_serializer.save()
+
+                related_data_map = {
+                    FamilyMemberSerializer: data.get('FamilyMember', []),
+                    EducationSerializer: data.get('Education', []),
+                    SpecializedEducationSerializer: data.get('SpecializedEducation', []),
+                    PoliticalTheoryEducationSerializer: data.get('PoliticalTheoryEducation', []),
+                    ForeignLanguageSerializer: data.get('ForeignLanguage', []),
+                    WorkExperienceSerializer: data.get('WorkExperience', []),
+                    TrainingCourseSerializer: data.get('TrainingCourse', []),
+                    AwardSerializer: data.get('Award', []),
+                    DisciplinaryActionSerializer: data.get('DisciplinaryAction', [])
+                }
+
+                for serializer_class, dataset in related_data_map.items():
+                    self.save_related_data(serializer_class, dataset, personal_instance.per_id)
+
+                evaluation_list = data.get('Evaluation', [])
+                if evaluation_list:
+                    evaluation_data = evaluation_list[0]
+                    evaluation_data["per_id"] = personal_instance.per_id
+                    evaluation_serializer = EvaluationSerializer(data=evaluation_data)
+                    evaluation_serializer.is_valid(raise_exception=True)
+                    evaluation_serializer.save()
+
+            return Response({
+                "message": "ບັນທຶກສຳເລັດ",
+                "per_id": personal_instance.per_id,
+                "name": personal_instance.full_name
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Error in post method: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, per_id: int):
+        data = request.data
+        personal_data = data.get('personal_information', {})
+        family_data = data.get('family_members', [])
+        evaluation_data = data.get('evaluation', {})
+        education_data = data.get('education', [])
+        specialized_data = data.get('specialized_education', [])
+        political_data = data.get('political_theory_education', [])
+        language_data = data.get('foreign_languages', [])
+        work_data = data.get('work_experiences', [])
+        training_data = data.get('training_courses', [])
+        award_data = data.get('awards', [])
+        disciplinary_data = data.get('disciplinary_actions', [])
+
+        personal_instance = get_object_or_404(PersonalInformation, per_id=per_id)
+
+        try:
+            with transaction.atomic():
+                # 1. Update Personal Information
+                personal_serializer = PersonalInformationSerializer(personal_instance, data=personal_data, partial=True)
+                personal_serializer.is_valid(raise_exception=True)
+                personal_serializer.save()
+
+                # 2. Update Related Many-to-Many Data (Using Bulk Operations)
+                def update_related_data(model_class, serializer_class, dataset):
+                    existing_items = {obj.id: obj for obj in model_class.objects.filter(per_id=per_id)}
+                    new_items = []
+                    for item in dataset:
+                        item["per_id"] = per_id
+                        if "id" in item and item["id"] in existing_items:
+                            serializer = serializer_class(existing_items[item["id"]], data=item, partial=True)
+                        else:
+                            serializer = serializer_class(data=item)
+                        serializer.is_valid(raise_exception=True)
+                        new_items.append(serializer)
+                    model_class.objects.bulk_create(
+                        [serializer.save() for serializer in new_items], ignore_conflicts=True
+                    )
+
+                update_related_data(FamilyMember, FamilyMemberSerializer, family_data)
+                update_related_data(Education, EducationSerializer, education_data)
+                update_related_data(SpecializedEducation, SpecializedEducationSerializer, specialized_data)
+                update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, political_data)
+                update_related_data(ForeignLanguage, ForeignLanguageSerializer, language_data)
+                update_related_data(WorkExperience, WorkExperienceSerializer, work_data)
+                update_related_data(TrainingCourse, TrainingCourseSerializer, training_data)
+                update_related_data(Award, AwardSerializer, award_data)
+                update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, disciplinary_data)
+
+                # 3. Update Evaluation (If exists)
+                if evaluation_data:
+                    evaluation_instance, _ = Evaluation.objects.update_or_create(per_id=per_id, defaults=evaluation_data)
+
+            return Response({
+                "message": "ອັບເດດສຳເລັດ",
+                "per_id": per_id,
+                "name": personal_instance.full_name
+            }, status=status.HTTP_200_OK)
+
+        except ValidationError as e:
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request, per_id: int):
+        personal_instance = get_object_or_404(PersonalInformation, per_id=per_id)
+        try:
+            with transaction.atomic():
+                # ລຶບຂໍ້ມູນທີ່ມີຄວາມສຳພັນກັນ
+                FamilyMember.objects.filter(per_id=per_id).delete()
+                Education.objects.filter(per_id=per_id).delete()
+                SpecializedEducation.objects.filter(per_id=per_id).delete()
+                PoliticalTheoryEducation.objects.filter(per_id=per_id).delete()
+                ForeignLanguage.objects.filter(per_id=per_id).delete()
+                WorkExperience.objects.filter(per_id=per_id).delete()
+                TrainingCourse.objects.filter(per_id=per_id).delete()
+                Award.objects.filter(per_id=per_id).delete()
+                DisciplinaryAction.objects.filter(per_id=per_id).delete()
+                Evaluation.objects.filter(per_id=per_id).delete()
+
+                # ລຶບຂໍ້ມູນຫຼັກ
+                personal_instance.delete()
+
+            return Response({"message": "ລຶບສຳເລັດ"}, status=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # def delete(self, request):
+    #     try:
+    #         with transaction.atomic():
+    #             # ລຶບທຸກຕາຕະລາງທີ່ກ່ຽວຂ້ອງ
+    #             FamilyMember.objects.all().delete()
+    #             Education.objects.all().delete()
+    #             SpecializedEducation.objects.all().delete()
+    #             PoliticalTheoryEducation.objects.all().delete()
+    #             ForeignLanguage.objects.all().delete()
+    #             WorkExperience.objects.all().delete()
+    #             TrainingCourse.objects.all().delete()
+    #             Award.objects.all().delete()
+    #             DisciplinaryAction.objects.all().delete()
+    #             Evaluation.objects.all().delete()
+    #             PersonalInformation.objects.all().delete()
+
+    #         return Response({"message": "ລຶບຂໍ້ມູນທັງໝົດສຳເລັດ"}, status=status.HTTP_204_NO_CONTENT)
+
+    #     except Exception as e:
+    #         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class permission_lcic_View(APIView):
     def get(self, request, sta_id=None):
         if sta_id:
@@ -747,4 +936,76 @@ class sidebar_View(APIView):
             return Response(serializer.data)
 
 
+from .serializers import UpdateDocSerializer
+from django.shortcuts import get_object_or_404
+
+class UpdateDocumentStatus(APIView):
+    def patch(self, request, doc_id):
+        document = get_object_or_404(document_lcic, doc_id=doc_id)
+
+        if not request.data:
+            return Response({"error": "No data provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = UpdateDocSerializer(document, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            if not any(request.data.values()):
+                return Response({"error": "No changes detected"}, status=status.HTTP_400_BAD_REQUEST)
+
+            new_status_values = request.data.get("status")
+            if new_status_values:
+                document.status.set(new_status_values)  # อัปเดต ManyToManyField
+
+            # **ดึง department จาก SystemUser และกำหนดให้ document**
+            user = request.user  # ใช้ request.user แทน us_id
+            if user and hasattr(user, 'department'):
+                document.department = user.department
+
+            serializer.save()
+            return Response(
+                {"message": "Status updated successfully", "data": serializer.data}, 
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from django.db import IntegrityError
+from .models import Document_Status
+from .serializers import DocStatusSerializer
+class docstatus(APIView):
+    def get(self, request):
+        # ດຶງຂໍ້ມູນທັງໝົດ
+        Document = Document_Status.objects.all()
+        # ແປງຂໍ້ມູນໃຊ້ Serializer
+        serializer = DocStatusSerializer(Document, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+            # ສະແດງຂໍ້ມູນ request ທີ່ໄດ້ຮັບ
+            print("Request Data:", request.data)
+
+            doc_id = request.data.get("doc_id")
+            us_id = request.data.get("us_id")
+
+            if not doc_id or not us_id:
+                return Response({"error": "doc_id ແລະ us_id ຕ້ອງມີຄ່າ"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                # ໃຊ້ update_or_create ເພື່ອປ່ຽນແປງຂໍ້ມູນຖ້າມີຢູ່ແລ້ວ
+                document_status, created = Document_Status.objects.update_or_create(
+                    doc_id_id=doc_id,  # ForeignKey ຕ້ອງໃຊ້ _id
+                    us_id_id=us_id,
+                )
+
+                serializer = DocStatusSerializer(document_status)
+                if created:
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)  # ຖືກສ້າງໃໝ່
+                else:
+                    return Response(serializer.data, status=status.HTTP_200_OK)  # ຖືກອັບເດດ
+
+            except IntegrityError:
+                return Response(
+                    {"error": "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້"},
+                    status=status.HTTP_400_BAD_REQUEST)
+    
 

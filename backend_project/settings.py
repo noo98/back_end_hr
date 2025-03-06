@@ -25,13 +25,11 @@ SECRET_KEY = 'django-insecure-t!qz%ki)b@2#z6t-$$#)_7khu30yu*pn79+@_d_hi$*n1$1-i_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.45.71']
-# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
 
 
 
 # Application definition
-
 INSTALLED_APPS = [
 
     'api',
@@ -173,9 +171,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    'http://192.168.45.49:3000',  
+    'http://192.168.45.32:3000',  
+    'http://192.168.45.71:3000',
 ]
-
+ALLOWED_HOSTS = ['192.168.45.71']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 import os
 
