@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from .authentication import CustomJWTAuthentication  # Import custom authentication
 from .models import Status,Sidebar
 from django.http import JsonResponse
+<<<<<<< HEAD
 # from django.views.decorators.csrf import csrf_exempt
 # import json
 
@@ -38,6 +39,20 @@ def update_view_status(request, doc_id):
         except document_lcic.DoesNotExist:
             return JsonResponse({"success": False, "message": "ບໍ່ພົບເອກະສານ"}, status=404)
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+=======
+from django.views.decorators.csrf import csrf_exempt
+import json
+from rest_framework import generics
+from rest_framework import viewsets
+
+class DocumentEntryViewSet(viewsets.ModelViewSet):
+    queryset = DocumentEntry.objects.all()
+    serializer_class = DocumentEntrySerializer
+
+class DocumentEntryList(generics.ListCreateAPIView):
+    queryset = DocumentEntry.objects.all()
+    serializer_class = DocumentEntrySerializer
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
 def get_items(request):
     items = Item.objects.all().values('id', 'name', 'description', 'price')
@@ -143,6 +158,25 @@ class document_lcic_UpdateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+<<<<<<< HEAD
+=======
+class DocumentEntryListView(APIView):
+    def get(self, request):
+        # ດຶງຂໍ້ມູນທັງໝົດ
+        Document = DocumentEntry.objects.all()
+        # ແປງຂໍ້ມູນໃຊ້ Serializer
+        serializer = DocumentEntrySerializer(Document, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class DocumentEntryCreateView(APIView):
+    def post(self, request):
+        # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
+        print(request.data)
+        serializer = DocumentEntrySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
              
 
@@ -221,6 +255,7 @@ class DepartmentListView(APIView):
         departments = Department.objects.all()
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
+<<<<<<< HEAD
     
 class DepartmentList_idView(APIView):
     def get(self, request, id):
@@ -1009,3 +1044,6 @@ class docstatus(APIView):
                     status=status.HTTP_400_BAD_REQUEST)
     
 
+=======
+    
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19

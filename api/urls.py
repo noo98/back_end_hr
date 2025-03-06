@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.urls import path
 from .views import UserView,LoginView
 from .views import Employee_lcicView,EmployeeInfoAPI
@@ -10,7 +11,23 @@ from .views import PersonalEducationCreateView,sidebar_View,UpdateDocumentStatus
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import update_view_status
+=======
+from django.urls import path, include
+from .views import EmployeeListAPI
+from .views import EmployeeDetailView,EmployeeCreateView,EmployeeDeleteView,EmployeeUpdateView
+from .views import Document_outListView,Document_outCreateView,Document_outDeleteView,Document_outUpdateView
+from .views import DocumentEntryListView,DocumentEntryCreateView,DocumentEntryDeleteView,DocumentEntryUpdateView
+from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView
+from .views import UserLogin,DepartmentListView
+from .views import DocumentEntryList
+from rest_framework.routers import DefaultRouter
+from .views import DocumentEntryViewSet
+from django.conf import settings
+from django.conf.urls.static import static
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
+router = DefaultRouter()
+router.register(r'document_entries', DocumentEntryViewSet)
 
 urlpatterns = [
     path('users/', UserView.as_view(), name='user-list-create'),
@@ -21,7 +38,16 @@ urlpatterns = [
     path('permission/', permission_lcic_View.as_view(), name='permission-list-create'),
     path('permission/<int:sta_id>/', permission_lcic_View.as_view(), name='permission-update-delete'),
 
+<<<<<<< HEAD
     path('sidebar/', sidebar_View.as_view(), name='sidebar-list'),
+=======
+    path('api/', include(router.urls)),
+    path('list/employees/', EmployeeListAPI.as_view(), name='employee-list'),
+    path('detail/employee/<int:emp_id>/', EmployeeDetailView.as_view(), name='employee-detail'),
+    path('add/employee/', EmployeeCreateView.as_view(), name='employee-create'),
+    path('delete/employee/<int:emp_id>/', EmployeeDeleteView.as_view(), name='employee-delete'),
+    path('update/employee/<int:emp_id>/', EmployeeUpdateView.as_view(), name="update_employee"),
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
     path('employee/', Employee_lcicView.as_view(), name='employees-list-create'),
     path('employee/<int:emp_id>/', Employee_lcicView.as_view(), name='employees-update-delete'),
@@ -46,6 +72,7 @@ urlpatterns = [
     path('update/departments/<int:id>/', Department_UpdateView.as_view(), name='update-departments'),
     path('delete/departments/<int:id>/', Department_DeleteView.as_view(), name='delete-departments'),
 
+<<<<<<< HEAD
     path('list/Document_format/', Document_format_ListView.as_view(), name='Document_format-list'),
     path('list/Document_format/<int:dmf_id>/', Document_format_idView.as_view(), name='Document_format-list_id'),
     path('add/Document_format/', Document_format_AddView.as_view(), name='Document_format-add'),
@@ -66,3 +93,8 @@ urlpatterns = [
   
 
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+=======
+    path('api/document-entries/', DocumentEntryList.as_view(), name='document-entry-list'),
+]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19

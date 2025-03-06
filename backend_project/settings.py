@@ -25,13 +25,18 @@ SECRET_KEY = 'django-insecure-t!qz%ki)b@2#z6t-$$#)_7khu30yu*pn79+@_d_hi$*n1$1-i_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+<<<<<<< HEAD
 
+=======
+ALLOWED_HOSTS = ['192.168.45.49',
+                 '127.0.0.1']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
 
 
 # Application definition
 INSTALLED_APPS = [
-
     'api',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -73,12 +78,16 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
 
+<<<<<<< HEAD
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
+=======
+CORS_ALLOW_ALL_ORIGINS = True
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
 ROOT_URLCONF = 'backend_project.urls'
 
@@ -117,12 +126,16 @@ DATABASES = {
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
         'HOST': '192.168.45.71',                      
+<<<<<<< HEAD
         'PORT': '5432',
         'OPTIONS': {'client_encoding': 'UTF8'},            
          'TEST': {
             'CHARSET': 'utf8',
             'COLLATION': 'utf8_general_ci',
         },               
+=======
+        'PORT': '5432',                           
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
     }
 }
 
@@ -171,6 +184,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
+<<<<<<< HEAD
     'http://192.168.45.32:3000',  
     'http://192.168.45.71:3000',
 ]
@@ -181,4 +195,17 @@ import os
 
 MEDIA_URL = '/media/'  # URL ສໍາລັບເປີດຟາຍ
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # ທີ່ຢູ່ຂອງຟາຍ
+=======
+    'http://192.168.45.49:8001',
+    'http://127.0.0.1:8001',
+]
+import os
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+from django.conf import settings
+from django.conf.urls.static import static
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 
