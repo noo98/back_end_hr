@@ -42,36 +42,7 @@ class Employee_lcic(models.Model):
 
     def __str__(self):
         return f"{self.emp_id} - {self.name_E} ({self.nickname})"
-<<<<<<< HEAD
-      
-=======
     
-class DocumentEntry(models.Model):
-    date = models.DateField()
-    number = models.CharField(max_length=100)
-    subject = models.CharField(max_length=255)
-    section = models.CharField(max_length=100)
-    file = models.FileField(upload_to='files/Records', blank=False, max_length=500)  # This field should be defined if you're uploading files
-    receiver = models.CharField(max_length=255)  # This field can be used for the receiver
-    document = models.TextField()  # You can use a TextField for a detailed description or any other type
-
-    def __str__(self):
-        return f"{self.number} - {self.subject}"
-
-
-class Document_out(models.Model):
-    date = models.DateField()  # Date field for the document's date
-    number = models.CharField(max_length=50)  # A field for the document number
-    subject = models.CharField(max_length=255)  # Field for the subject of the document
-    section = models.CharField(max_length=100)  # Field for the section related to the document
-    file = models.FileField(upload_to='files/Records', blank=False, max_length=500)  # Field to store the file, specifying the upload directory
-    Sender = models.CharField(max_length=255)  # Receiver of the document
-    document = models.CharField(max_length=100)  # Field for storing document details or description
-
-    def __str__(self):
-        return f"{self.number} - {self.subject}"
-    
->>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
 class activity(models.Model):
     Tname = models.CharField(max_length=50)  
     Tdeteil = models.CharField(max_length=255)
