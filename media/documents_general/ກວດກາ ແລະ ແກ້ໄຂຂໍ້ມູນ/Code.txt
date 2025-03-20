@@ -1,0 +1,101 @@
+ใช่ครับ เนื่องจากคุณแยก Frontend และ Backend ออกเป็นสองโปรเจกต์ การจัดการจะต้องคำนึงถึงการสื่อสารระหว่าง Backend API และ Frontend ผ่าน HTTP Requests (เช่น POST, GET) แทนที่จะจัดการแบบรวมในโปรเจกต์เดียว
+
+โครงสร้างโปรเจกต์ของคุณ:
+Backend: จัดการ API ด้วย Django (อยู่ในโปรเจกต์ backend_project)
+Frontend: จัดการหน้าเว็บและฟอร์มด้วย Django Template (อยู่ในโปรเจกต์ frontend_project)
+วิธีทำงานร่วมกันระหว่าง Frontend และ Backend
+Backend:
+
+ในโปรเจกต์ Backend (backend_project), คุณต้องสร้าง API Endpoint สำหรับรับข้อมูลจากฟอร์ม โดยใช้ Django REST Framework (DRF)
+ตัวอย่าง API Endpoint (views.py ใน backend_project/api):
+
+python
+-------------------------------------------------------
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import DocumentEntry
+from .serializers import DocumentEntrySerializer
+
+@api_view(['POST'])
+def add_document_entry_api(request):
+    serializer = DocumentEntrySerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Document added successfully!"}, status=201)
+    return Response(serializer.errors, status=400)
+
+
+เชื่อม URL ใน backend_project/urls.py:
+
+python
+-------------------------------------------------
+from django.urls import path
+from api import views
+
+urlpatterns = [
+    path('add/document/', views.add_document_entry_api, name='add_document_entry_api'),
+]
+Frontend:
+
+ในโปรเจกต์ Frontend (frontend_project), เมื่อกด Submit ฟอร์ม คุณต้องส่งข้อมูลไปยัง API ของ Backend ผ่าน fetch หรือ Axios (JavaScript) หรือส่งด้วย form action ใน Django Template
+ตัวอย่างการใช้ Django Template (add_document_entry.html):
+
+html
+----------------------------------------------------------
+<form method="post" action="http://192.168.45.71:8000/add/document/" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="date" class="form-control" name="date" required>
+        </div>
+        <div class="col-md-6">
+            <input type="text" class="form-control" name="number" placeholder="Document Number" required>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control" name="subject" placeholder="Subject" required>
+        </div>
+        <div class="col-md-6">
+            <select class="form-select" name="section" required>
+                <option value="" disabled selected>Select Section</option>
+                <option value="Finance">Finance</option>
+                <option value="HR">HR</option>
+                <option value="Operations">Operations</option>
+            </select>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="file" class="form-control" name="file" required>
+        </div>
+        <div class="col-md-6">
+            <input type="text" class="form-control" name="receiver" placeholder="Receiver" required>
+        </div>
+    </div>
+    <textarea class="form-control" name="document" rows="5" placeholder="Enter document details" required></textarea>
+    <div class="row p-3">
+        <button type="submit" class="btn btn-primary mb-3 w-50">Submit</button>
+        <button type="reset" class="btn btn-danger mb-3 w-50">Reset</button>
+    </div>
+</form>
+แก้ไข Cross-Origin Resource Sharing (CORS):
+
+หาก Backend และ Frontend อยู่คนละเซิร์ฟเวอร์ คุณต้องอนุญาตให้ Frontend เข้าถึง API ใน Backend โดยเพิ่ม django-cors-headers ใน Backend
+
+bash
+-----------------------------------------------------------------------
+pip install django-cors-headers
+ใน settings.py ของ backend_project:
+
+python
+Copy code
+INSTALLED_APPS += ['corsheaders']
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.45.71:8000",  # เพิ่ม URL ของ Frontend
+]
+สรุป:
+Backend (backend_project): รับข้อมูลจากฟอร์มผ่าน API (POST request)
+Frontend (frontend_project): ส่งข้อมูลไปยัง Backend โดยใช้ URL API (http://192.168.45.71:8000/add/document/)

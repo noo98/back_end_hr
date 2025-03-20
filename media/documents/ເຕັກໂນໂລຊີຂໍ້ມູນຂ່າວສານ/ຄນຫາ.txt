@@ -1,0 +1,11 @@
+#ຄົ້ນຫາຊື່ເອກະສານ
+192.168.45.71:8000/api/search/document_lcic/?q=ໃສ່ຊື່ເອກະສານ
+
+#ຄົ້ນຫາເວລາເພີ່ມເອກສານ
+192.168.45.71:8000/api/search/document_lcic/?start_date=2025-01-01&end_date=2025-01-07
+
+#ຄົ້ນຫາພະແນກ
+192.168.45.71:8000/api/search/document_lcic/?department=ຊື່ພະແນກ
+
+#ຄົ້ນຫາປະເພດເອກະສານ
+192.168.45.71:8000/api/search/document_lcic/?doc_type=ປະເພດເອກະສານ(ເຂົ້າ-ອອກ)

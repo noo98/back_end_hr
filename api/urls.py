@@ -3,10 +3,10 @@ from .views import UserView,LoginView
 from .views import Employee_lcicView,EmployeeInfoAPI
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_deleteView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
-from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View
+from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View,DocumentFormatSearchView
 from .views import Department_AddView,Department_UpdateView,Department_DeleteView,document_lcic_List_idView,document_general_SearchView
 from .views import Document_format_ListView,Document_format_AddView,Document_format_UpdateView,Document_format_DeleteView,Document_format_idView
-from .views import PersonalEducationCreateView,sidebar_View,UpdateDocumentStatus,docstatus
+from .views import PersonalEducationCreateView,sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import update_view_status
@@ -34,6 +34,8 @@ urlpatterns = [
     path('update/document_lcic/<int:doc_id>/',document_lcic_UpdateView.as_view(), name='document_lcic-update'),
     path('delete/document_lcic/<int:doc_id>/',document_lcic_deleteView.as_view(), name='document_lcic-delete'),
     path('update_status/<int:doc_id>/', UpdateDocumentStatus.as_view(), name='update-document-status'),
+    path('search/document_lcic/', document_lcic_SearchView.as_view(), name='search-document'),
+  
     
     path('list/activity/', activityListView.as_view(), name='activity-list'),
     path('add/activity/', activityCreateView.as_view(), name='activity-create'),
@@ -51,12 +53,13 @@ urlpatterns = [
     path('add/Document_format/', Document_format_AddView.as_view(), name='Document_format-add'),
     path('update/Document_format/<int:dmf_id>/', Document_format_UpdateView.as_view(), name='update-Document_format'),
     path('delete/Document_format/<int:dmf_id>/', Document_format_DeleteView.as_view(), name='delete-Document_format'),    
-
-    path('search/document_lcic/', document_lcic_SearchView.as_view(), name='search-document'),
+    path('search/Document_format/', DocumentFormatSearchView.as_view(), name='search-document'),
 
     path('document_general/', document_general_View.as_view(), name='document_general-list-create'),
     path('document_general/<int:docg_id>/', document_general_View.as_view(), name='document_general-update-delete'),
     path('search/document_general/', document_general_SearchView.as_view(), name='search-document_general'),
+    path('auto-update-status/', AutoUpdateStatusDocAPIView.as_view(), name='auto_update_status_doc'),
+
 
     path('personal/', PersonalEducationCreateView.as_view(), name='personal-education-create'),
     path('personal/<int:per_id>/', PersonalEducationCreateView.as_view(), name='personal-update-delete'),

@@ -1,5 +1,10 @@
 from django.db import models
-# from django.contrib.auth.models import User
+from django.db import models
+import os
+def department_directory_path(instance, filename):
+    return os.path.join('documents', instance.department.name, filename)
+def general_document_directory_path(instance, filename):
+    return os.path.join('documents_general', instance.department.name, filename)
 
 class Item(models.Model):
     name = models.CharField(max_length=255)
@@ -38,7 +43,7 @@ class Employee_lcic(models.Model):
     year_entry = models.CharField(null=True)  # ປີເຂົ້າເຮັດວຽກ
     salary_level = models.CharField(max_length=100)# ຂັ້ນເງິນເດືອນ
     phone = models.CharField(max_length=20)  # ເບີໂທ
-    pic = models.ImageField(blank=True, null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
+    pic = models.ImageField(upload_to='emp_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
 
     def __str__(self):
         return f"{self.emp_id} - {self.name_E} ({self.nickname})"
@@ -127,16 +132,21 @@ class Document_type(models.Model):
 class Document_format(models.Model):
     dmf_id = models.AutoField(primary_key=True)
     name = models.CharField(unique=True, max_length=250)
+    Department = models.ForeignKey("Department", on_delete=models.CASCADE, null=True)
+    us_id = models.ForeignKey("SystemUser", on_delete=models.CASCADE, null=True)
+    insert_date = models.CharField(max_length=255, null=True)
+    update_date = models.DateField(auto_now=True, null=True)
 
 class document_lcic(models.Model):
     doc_id = models.AutoField(primary_key=True) # ລະຫັດເອກະສານ
     insert_date = models.CharField(max_length=100, blank=True, null=True) # ວັນທີ່ເພີ່ມ
+    update_date = models.DateField(auto_now=True, null=True)
     doc_number = models.CharField(max_length=100, blank=True, null=True) # ເລກທີເອກະສານ
     subject = models.CharField(max_length=255, blank=True, null=True) # ເລື່ອງ
     format = models.ForeignKey(Document_format, on_delete=models.CASCADE) # ຮູບແບບ
     doc_type = models.CharField(max_length=255, blank=True, null=True) # ປະເພດເອກະສານ(ຂາເຂົ້າ, ຂາອອກ, ອື່ນໆ)
     doc_type_info = models.CharField(max_length=255, blank=True, null=True) # ປະເພດເອກະສານ ທີສົ່ງໃຫ້ພະແນກອື່ນ (ຂາເຂົ້າ, ຂາອອກ,)
-    file = models.FileField(upload_to='documents/',null=True) # ໄຟລແທນ
+    file = models.FileField(upload_to=department_directory_path, null=True) # ກຳນົດເສັ້ນທາງໄຟລ໌
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='document_lcic_department')
     document_detail = models.CharField(max_length=255, blank=True, null=True) # ລາຍລະອຽດ
     name = models.CharField(max_length=255, blank=True, null=True) # ຜູ້ສ້າງ
@@ -146,11 +156,14 @@ class document_lcic(models.Model):
 
 class document_general(models.Model):
     docg_id = models.AutoField(primary_key=True) # ລະຫັດເອກະສານ
-    insert_date = models.CharField(max_length=100, blank=True, null=True) # ວັນທີ່ເພີ່ມ
+    insert_date = models.CharField(max_length=15, blank=True, null=True) # ວັນທີ່ເພີ່ມ
+    update_date = models.DateField(auto_now=True, null=True)
+    en_date = models.DateField(null=True, blank=True) # ວັນທີ່ເອກະສານສີນສຸດ
+    status_doc = models.CharField(max_length=20, default="0") # ສະຖານະເອກະສານ ເຜີຍແຜ່, ບໍ່ເຜີຍແຜ່
     doc_number = models.CharField(max_length=100, blank=True, null=True) # ເລກທີເອກະສານ
     subject = models.CharField(max_length=255, blank=True, null=True) # ເລື່ອງ
     format = models.ForeignKey(Document_format, on_delete=models.CASCADE) # ຮູບແບບ
-    file = models.FileField(upload_to='documents_general/',null=True) # ໄຟລແທນ
+    file = models.FileField(upload_to=general_document_directory_path, null=True) # ກຳນົດເສັ້ນທາງໄຟລ໌
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='document_lcic_general') # ພະແນກ
     document_detail = models.CharField(max_length=255, blank=True, null=True) # ລາຍລະອຽດ
     name = models.CharField(max_length=255, blank=True, null=True) # ຜູ້ສ້າງ

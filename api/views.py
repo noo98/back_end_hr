@@ -10,8 +10,8 @@ from .models import Employee_lcic,document_lcic
 from .serializers import EmployeeSerializer  # ສ້າງ Serializer ກ່ອນ
 from .models import activity
 from .models import SystemUser
-from .serializers import SystemUserSerializer
-from .serializers import activitySerializer,Document_formatSerializer
+from .serializers import SystemUserSerializer,DocumentFormatSerializer,DocumentFormat_Serializer
+from .serializers import activitySerializer
 from .models import Department,Document_format,document_general
 from .serializers import DepartmentSerializer,document_lcicSerializer,document_lcic_addSerializer,document_general_Serializer,StatusSerializer,SidebarSerializer
 from django.contrib.auth.hashers import check_password
@@ -24,6 +24,9 @@ from rest_framework.permissions import IsAuthenticated
 from .authentication import CustomJWTAuthentication  # Import custom authentication
 from .models import Status,Sidebar
 from django.http import JsonResponse
+from django.utils import timezone
+import datetime
+
 # from django.views.decorators.csrf import csrf_exempt
 # import json
 
@@ -280,13 +283,12 @@ class Department_DeleteView(APIView):
 #
 #
 
-
 class Document_format_ListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
         Document = Document_format.objects.all()
         # ແປງຂໍ້ມູນໃຊ້ Serializer
-        serializer = Document_formatSerializer(Document, many=True)
+        serializer = DocumentFormatSerializer(Document, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class Document_format_idView(APIView):
@@ -299,7 +301,7 @@ class Document_format_idView(APIView):
         
         try:
             document = Document_format.objects.get(dmf_id=dmf_id)
-            serializer = Document_formatSerializer(document)
+            serializer = DocumentFormatSerializer(document)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Document_format.DoesNotExist:
             return Response({"error": "Document_format not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -309,7 +311,7 @@ class Document_format_idView(APIView):
 class Document_format_AddView(APIView):
     def post(self, request):
         # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-        serializer = Document_formatSerializer(data=request.data)
+        serializer = DocumentFormat_Serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -325,9 +327,8 @@ class Document_format_UpdateView(APIView):
                 {"error": f"Document_format with ID {dmf_id} not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
         # ອັບເດດຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = Document_formatSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
+        serializer = DocumentFormatSerializer(document, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -546,14 +547,18 @@ class document_lcic_SearchView(APIView):
 
 class document_general_SearchView(APIView):
     def get(self, request):
-        search_query = request.query_params.get('subject', None)
-        start_date = request.query_params.get('start_date', None)
-        end_date = request.query_params.get('end_date', None)
-        department = request.query_params.get('department', None)
-        department_id = request.query_params.get('department_id', None)
-        doc_type = request.query_params.get('doc_type', None)
-        format_name = request.query_params.get('format', None)
+        search_query = request.query_params.get("subject", None)
+        start_date = request.query_params.get("start_date", None)
 
+        
+        end_date = request.query_params.get("end_date", None)
+        department = request.query_params.get("department", None)
+        department_id = request.query_params.get("department_id", None)
+        doc_type = request.query_params.get("doc_type", None)
+        format_name = request.query_params.get("format", None)
+        status_doc = request.query_params.get("status_doc", None)  # ເພີ່ມ filter ສະຖານະເອກະສານ
+
+        # ເລີ່ມຕົ້ນ Query ສໍາລັບຄົ້ນຫາ
         documents = document_general.objects.all()
 
         if search_query:
@@ -566,6 +571,8 @@ class document_general_SearchView(APIView):
             documents = documents.filter(doc_type__icontains=doc_type)
         if format_name:
             documents = documents.filter(format__name__icontains=format_name)
+        if status_doc:
+            documents = documents.filter(status_doc=status_doc)
 
         # Handle date range filtering only if insert_date is a DateField
         if start_date:
@@ -573,20 +580,29 @@ class document_general_SearchView(APIView):
                 start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
                 documents = documents.filter(insert_date__gte=start_date)
             except ValueError:
-                return Response({"message": "Invalid start_date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "Invalid start_date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if end_date:
             try:
                 end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
                 documents = documents.filter(insert_date__lte=end_date)
             except ValueError:
-                return Response({"message": "Invalid end_date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "Invalid end_date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if documents.exists():
             serializer = document_general_Serializer(documents, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        return Response({"message": "No documents found matching your search query."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "No documents found matching your search query."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 class EmployeeInfoAPI(APIView):
@@ -620,10 +636,11 @@ class document_general_View(APIView):
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            doc = document_general.objects.all()
+            doc = document_general.objects.all().order_by('-docg_id')  # ສະແດງຈາກ ID ສູງຫາຕ່ຳ
             serializer = document_general_Serializer(doc, many=True)
             return Response(serializer.data)
-
+        
+        
     def post(self, request):
         serializer = document_general_Serializer(data=request.data)
         if serializer.is_valid():
@@ -1009,3 +1026,39 @@ class docstatus(APIView):
                     status=status.HTTP_400_BAD_REQUEST)
     
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Document_format
+from .serializers import DocumentFormat_Serializer
+
+class DocumentFormatSearchView(APIView):
+    def get(self, request):
+        department_name = request.query_params.get('department')
+        department_id = request.query_params.get('department_id')
+        documents = Document_format.objects.all()
+        # Apply filters according to actual field names
+        if department_name:
+            documents = documents.filter(Department__name__icontains=department_name)
+        if department_id:
+            documents = documents.filter(Department_id=department_id)
+        if not documents.exists():
+            return Response(
+                {"message": "No documents found matching your search query."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = DocumentFormatSerializer(documents, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AutoUpdateStatusDocAPIView(APIView):
+    def post(self, request, format=None):
+        today = timezone.now().date()
+        docs = document_general.objects.filter(status_doc='1').exclude(en_date__isnull=True)
+        expired_docs = docs.filter(en_date__lte=today)
+        updated_count = expired_docs.update(status_doc='0')
+        serializer = document_general_Serializer(expired_docs, many=True)
+        return Response({
+            "message": f"Updated {updated_count} documents (status 1 ➡️ 0)",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)

@@ -62,9 +62,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DocumentFormatSerializer(serializers.ModelSerializer):
+    department_id = serializers.IntegerField(source="Department.id", read_only=True)
+    department_name = serializers.CharField(source="Department.name", read_only=True)
+    user_id = serializers.IntegerField(source="us_id.us_id", read_only=True)
+    user_name = serializers.CharField(source="us_id.username", read_only=True)
     class Meta:
         model = Document_format
-        fields = ['dmf_id', 'name']
+        fields = ["dmf_id", "name", "department_id", "department_name", "user_id", "user_name", "insert_date", "update_date"]
+
+class DocumentFormat_Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document_format
+        fields = '__all__'
+
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -127,10 +137,10 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ['id', 'name']
 
-class Document_formatSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Document_format
-        fields = ['dmf_id', 'name']
+# class Document_formatSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Document_format
+#         fields = ['dmf_id', 'name']
 
 class Document_typeSerializer(serializers.ModelSerializer):
     class Meta:

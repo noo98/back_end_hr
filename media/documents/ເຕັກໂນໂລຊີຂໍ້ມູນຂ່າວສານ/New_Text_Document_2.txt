@@ -1,0 +1,19 @@
+CREATE TABLE financial_reports (
+    bnk_code VARCHAR(10),
+    financial_institution VARCHAR(255),
+    report_date DATE,
+    loan_amount BIGINT,
+    loan_accounts INT,
+    loan_customers INT
+);
+
+
+CREATE TABLE financial_reports (
+    id SERIAL PRIMARY KEY,
+    bnk_code VARCHAR(10) NOT NULL,
+    bnk_lao_name VARCHAR(255) NOT NULL,
+    report_date DATE NOT NULL,
+    loan_amount BIGINT NOT NULL DEFAULT 0,
+    loan_accounts INT NOT NULL DEFAULT 0,
+    loan_customers INT NOT NULL DEFAULT 0,
+);

@@ -116,7 +116,7 @@ DATABASES = {
         'NAME': 'hr_server',                      
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
-        'HOST': '192.168.45.71',                      
+        'HOST': '192.168.45.53',                      
         'PORT': '5432',
         'OPTIONS': {'client_encoding': 'UTF8'},            
          'TEST': {
@@ -171,10 +171,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
-    'http://192.168.45.32:3000',  
+    'http://192.168.45.33',  
     'http://192.168.45.71:3000',
+    'http://192.168.45.231:3000',
+    'http://192.168.45.33:3000',
+    'http://192.168.45.33:80',
 ]
-ALLOWED_HOSTS = ['192.168.45.71']
+ALLOWED_HOSTS = ['192.168.45.53']
 # ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 import os
