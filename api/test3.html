@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ຟອມປ້ອນຂໍ້ມູນຊັບສິນ</title>
+    <style>
+        body {
+            font-family: 'Phetsarath OT', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+            display: none;
+            margin-top: 5px;
+        }
+        .add-btn {
+            background-color: #007BFF;
+            margin-left: 10px;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+        .add-btn:hover {
+            background-color: #0056b3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .close-btn {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #333;
+        }
+        .close-btn:hover {
+            color: #000;
+        }
+        select:disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>ຟອມປ້ອນຂໍ້ມູນຊັບສິນ</h2>
+        <form id="assetForm" action="http://192.168.45.52:8000/api/assets/" method="POST">
+            <div class="form-group">
+                <label for="code">ລະຫັດຊັບສິນ:</label>
+                <input type="text" id="code" name="code" required>
+                <div id="code_error" class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="ast_id">ປະເພດຊັບສິນ:</label>
+                <select id="ast_id" name="ast_id" required>
+                    <option value="">ເລືອກປະເພດຊັບສິນ</option>
+                </select>
+                <button type="button" class="add-btn" onclick="openAssetTypeModal()">ເພີ່ມປະເພດຊັບສິນ</button>
+                <div id="ast_id_error" class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="cat_id">ຊື່ຊັບສິນ:</label>
+                <select id="cat_id" name="cat_id" required disabled>
+                    <option value="">ກະລຸນາເລືອກປະເພດຊັບສິນກ່ອນ</option>
+                </select>
+                <button type="button" class="add-btn" onclick="openCategoryModal()">ເພີ່ມຊື່ຊັບສິນ</button>
+                <div id="cat_id_error" class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="dep_status">ສະຖານະຫຼຸດຄ່າເສື່ອມລາຄາ:</label>
+                <input type="text" id="dep_status" name="dep_status">
+            </div>
+
+            <div class="form-group">
+                <label for="value">ມູນຄ່າເດີມ (ກີບ):</label>
+                <input type="number" id="value" name="value" step="0.01" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date_use">ວັນ/ເດືອນ/ປີ ນໍາໃຊ້:</label>
+                <input type="date" id="date_use" name="date_use" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date_exp">ວັນ/ເດືອນ/ປີ ໝົດອາຍຸນໍາໃຊ້:</label>
+                <input type="date" id="date_exp" name="date_exp" required>
+            </div>
+
+            <div class="form-group">
+                <label for="life_left">ອາຍຸຍັງເຫຼືອ (ເດືອນ):</label>
+                <input type="number" id="life_left" name="life_left" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location">ທີ່ຕັ້ງຊັບສິນ:</label>
+                <input type="text" id="location" name="location" required>
+            </div>
+
+            <div class="form-group">
+                <label for="emp_user">ຜູ້ນຳໃຊ້:</label>
+                <input type="text" id="emp_user" name="emp_user" required>
+            </div>
+
+            <div class="form-group">
+                <label for="note">ໝາຍເຫດ:</label>
+                <textarea id="note" name="note" rows="4"></textarea>
+            </div>
+
+            <button type="submit">ບັນທຶກຊັບສິນ</button>
+        </form>
+    </div>
+
+    <!-- Modal ສຳລັບເພີ່ມປະເພດຊັບສິນ -->
+    <div id="assetTypeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAssetTypeModal()">×</span>
+            <h3>ເພີ່ມປະເພດຊັບສິນ</h3>
+            <form id="assetTypeForm">
+                <div class="form-group">
+                    <label for="ac_num">ເລກທີ່ບັນຊີ:</label>
+                    <input type="text" id="ac_num" name="ac_num">
+                    <div id="ac_num_error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="ast_type_name">ປະເພດຊັບສິນ:</label>
+                    <input type="text" id="ast_type_name" name="ast_type_name" required>
+                    <div id="ast_type_name_error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="Sh_name">ລະຫັດສັ້ນ:</label>
+                    <input type="text" id="Sh_name" name="Sh_name" maxlength="10">
+                    <div id="Sh_name_error" class="error-message"></div>
+                </div>
+                <button type="submit">ບັນທຶກປະເພດຊັບສິນ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal ສຳລັບເພີ່ມຊື່ຊັບສິນ -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeCategoryModal()">×</span>
+            <h3>ເພີ່ມຊື່ຊັບສິນ</h3>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="cat_ast_id">ປະເພດຊັບສິນ:</label>
+                    <select id="cat_ast_id" name="ast_id" required>
+                        <option value="">ເລືອກປະເພດຊັບສິນ</option>
+                    </select>
+                    <div id="cat_ast_id_error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="cat_num">ລະຫັດປະເພດ:</label>
+                    <input type="text" id="cat_num" name="cat_num" maxlength="100" >
+                    <div id="cat_num_error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="cat_name">ຊື່ປະເພດ:</label>
+                    <input type="text" id="cat_name" name="cat_name" maxlength="100" required>
+                    <div id="cat_name_error" class="error-message"></div>
+                </div>
+                <button type="submit">ບັນທຶກຊື່ຊັບສິນ</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://192.168.45.52:8000/api/';
+
+        // ດຶງ CSRF token
+        function getCsrfToken() {
+            const token = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return token ? token.value : '';
+        }
+
+        // ໂຫຼດປະເພດຊັບສິນ
+        async function loadast_type_name() {
+            try {
+                const response = await fetch(`${BASE_URL}asset_types/`);
+                if (!response.ok) throw new Error('Failed to fetch asset types');
+                const ast_type_name = await response.json();
+                const astSelect = document.getElementById('ast_id');
+                const catAstSelect = document.getElementById('cat_ast_id');
+                const astError = document.getElementById('ast_id_error');
+                const catAstError = document.getElementById('cat_ast_id_error');
+
+                astError.style.display = 'none';
+                catAstError.style.display = 'none';
+                astSelect.innerHTML = '<option value="">ເລືອກປະເພດຊັບສິນ</option>';
+                catAstSelect.innerHTML = '<option value="">ເລືອກປະເພດຊັບສິນ</option>';
+
+                if (ast_type_name && Array.isArray(ast_type_name)) {
+                    ast_type_name.forEach(type => {
+                        const option1 = document.createElement('option');
+                        option1.value = type.ast_id;
+                        option1.textContent = type.ast_type_name || 'Unknown Type';
+                        astSelect.appendChild(option1);
+
+                        const option2 = document.createElement('option');
+                        option2.value = type.ast_id;
+                        option2.textContent = type.ast_type_name || 'Unknown Type';
+                        catAstSelect.appendChild(option2);
+                    });
+                } else {
+                    astError.textContent = 'ບໍ່ມີຂໍ້ມູນປະເພດຊັບສິນ';
+                    astError.style.display = 'block';
+                    catAstError.textContent = 'ບໍ່ມີຂໍ້ມູນປະເພດຊັບສິນ';
+                    catAstError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading asset types:', error);
+                document.getElementById('ast_id_error').textContent = 'ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່';
+                document.getElementById('ast_id_error').style.display = 'block';
+                document.getElementById('cat_ast_id_error').textContent = 'ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່';
+                document.getElementById('cat_ast_id_error').style.display = 'block';
+            }
+        }
+
+        // ໂຫຼດຊື່ຊັບສິນ (ກັ່ນຕອງຕາມ ast_id ໂດຍໃຊ້ /api/category/search/)
+        async function loadCategories(astId = null) {
+            try {
+                const catSelect = document.getElementById('cat_id');
+                const catError = document.getElementById('cat_id_error');
+
+                catSelect.innerHTML = '<option value="">ເລືອກຊື່ຊັບສິນ</option>';
+                catError.style.display = 'none';
+
+                if (!astId) {
+                    catSelect.disabled = true;
+                    catSelect.innerHTML = '<option value="">ກະລຸນາເລືອກປະເພດຊັບສິນກ່ອນ</option>';
+                    return;
+                }
+
+                const response = await fetch(`${BASE_URL}category/search/?ast_id=${astId}`);
+                if (!response.ok) throw new Error('Failed to fetch categories');
+                const categories = await response.json();
+
+                catSelect.disabled = false;
+                if (categories && Array.isArray(categories)) {
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.cat_id;
+                        option.textContent = category.cat_name || 'Unknown Category';
+                        catSelect.appendChild(option);
+                    });
+                    if (categories.length === 0) {
+                        catSelect.innerHTML = '<option value="">ບໍ່ມີຊື່ຊັບສິນສຳລັບປະເພດນີ້</option>';
+                    }
+                } else {
+                    catSelect.innerHTML = '<option value="">ບໍ່ມີຊື່ຊັບສິນສຳລັບປະເພດນີ້</option>';
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                document.getElementById('cat_id_error').textContent = 'ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່';
+                document.getElementById('cat_id_error').style.display = 'block';
+            }
+        }
+
+        // ເປີດແລະປິດ Modal
+        function openAssetTypeModal() {
+            document.getElementById('assetTypeModal').style.display = 'block';
+            document.getElementById('assetTypeForm').reset();
+            document.querySelectorAll('#assetTypeForm .error-message').forEach(el => el.style.display = 'none');
+        }
+
+        function closeAssetTypeModal() {
+            document.getElementById('assetTypeModal').style.display = 'none';
+        }
+
+        function openCategoryModal() {
+            const astId = document.getElementById('ast_id').value;
+            if (!astId) {
+                alert('ກະລຸນາເລືອກປະເພດຊັບສິນກ່ອນ!');
+                return;
+            }
+            document.getElementById('categoryModal').style.display = 'block';
+            document.getElementById('categoryForm').reset();
+            document.querySelectorAll('#categoryForm .error-message').forEach(el => el.style.display = 'none');
+            document.getElementById('cat_ast_id').value = astId;
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').style.display = 'none';
+        }
+
+        // ຈັດການການສົ່ງຟອມປະເພດຊັບສິນ
+        document.getElementById('assetTypeForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`${BASE_URL}asset_types/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    alert('ບັນທຶກປະເພດຊັບສິນສຳເລັດ!');
+                    closeAssetTypeModal();
+                    loadast_type_name();
+                    event.target.reset();
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.ac_num) {
+                        document.getElementById('ac_num_error').textContent = Array.isArray(errorData.ac_num) ? errorData.ac_num.join(', ') : errorData.ac_num;
+                        document.getElementById('ac_num_error').style.display = 'block';
+                    }
+                    if (errorData.asset_type) {
+                        document.getElementById('asset_type_error').textContent = Array.isArray(errorData.asset_type) ? errorData.asset_type.join(', ') : errorData.asset_type;
+                        document.getElementById('asset_type_error').style.display = 'block';
+                    }
+                    if (errorData.Sh_name) {
+                        document.getElementById('Sh_name_error').textContent = Array.isArray(errorData.Sh_name) ? errorData.Sh_name.join(', ') : errorData.Sh_name;
+                        document.getElementById('Sh_name_error').style.display = 'block';
+                    }
+                    alert(`ຂໍ້ຜິດພາດ: ${errorData.message || JSON.stringify(errorData) || 'ບໍ່ສາມາດບັນທຶກປະເພດຊັບສິນໄດ້'}`);
+                }
+            } catch (error) {
+                console.error('Error submitting asset type:', error);
+                alert('ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່');
+            }
+        });
+
+        // ຈັດການການສົ່ງຟອມຊື່ຊັບສິນ
+        document.getElementById('categoryForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            if (data.ast_id) {
+                data.ast_id = parseInt(data.ast_id);
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}category/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    alert('ບັນທຶກຊື່ຊັບສິນສຳເລັດ!');
+                    closeCategoryModal();
+                    const astId = document.getElementById('ast_id').value;
+                    loadCategories(astId);
+                    event.target.reset();
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.ast_id) {
+                        document.getElementById('cat_ast_id_error').textContent = Array.isArray(errorData.ast_id) ? errorData.ast_id.join(', ') : errorData.ast_id;
+                        document.getElementById('cat_ast_id_error').style.display = 'block';
+                    }
+                    if (errorData.cat_num) {
+                        document.getElementById('cat_num_error').textContent = Array.isArray(errorData.cat_num) ? errorData.cat_num.join(', ') : errorData.cat_num;
+                        document.getElementById('cat_num_error').style.display = 'block';
+                    }
+                    if (errorData.cat_name) {
+                        document.getElementById('cat_name_error').textContent = Array.isArray(errorData.cat_name) ? errorData.cat_name.join(', ') : errorData.cat_name;
+                        document.getElementById('cat_name_error').style.display = 'block';
+                    }
+                    alert(`ຂໍ້ຜິດພາດ: ${errorData.message || JSON.stringify(errorData) || 'ບໍ່ສາມາດບັນທຶກຊື່ຊັບສິນໄດ້'}`);
+                }
+            } catch (error) {
+                console.error('Error submitting category:', error);
+                alert('ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່');
+            }
+        });
+
+        // ຈັດການການສົ່ງຟອມຊັບສິນ
+        document.getElementById('assetForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            if (data.ast_id) {
+                data.ast_id = parseInt(data.ast_id);
+            }
+            if (data.cat_id) {
+                data.cat_id = parseInt(data.cat_id);
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}assets/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    alert('ບັນທຶກຊັບສິນສຳເລັດ!');
+                    event.target.reset();
+                    document.getElementById('cat_id').disabled = true;
+                    document.getElementById('cat_id').innerHTML = '<option value="">ກະລຸນາເລືອກປະເພດຊັບສິນກ່ອນ</option>';
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.code) {
+                        document.getElementById('code_error').textContent = Array.isArray(errorData.code) ? errorData.code.join(', ') : errorData.code;
+                        document.getElementById('code_error').style.display = 'block';
+                    }
+                    if (errorData.ast_id) {
+                        document.getElementById('ast_id_error').textContent = Array.isArray(errorData.ast_id) ? errorData.ast_id.join(', ') : errorData.ast_id;
+                        document.getElementById('ast_id_error').style.display = 'block';
+                    }
+                    if (errorData.cat_id) {
+                        document.getElementById('cat_id_error').textContent = Array.isArray(errorData.cat_id) ? errorData.cat_id.join(', ') : errorData.cat_id;
+                        document.getElementById('cat_id_error').style.display = 'block';
+                    }
+                    alert(`ຂໍ້ຜິດພາດ: ${errorData.message || JSON.stringify(errorData) || 'ບໍ່ສາມາດບັນທຶກຊັບສິນໄດ້'}`);
+                }
+            } catch (error) {
+                console.error('Error submitting asset:', error);
+                alert('ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່');
+            }
+        });
+
+        // ໂຫຼດຂໍ້ມູນເບື້ອງຕົ້ນ
+        window.onload = () => {
+            loadast_type_name();
+        };
+
+        // ກັ່ນຕອງ categories ເມື່ອເລືອກ asset type
+        document.getElementById('ast_id').addEventListener('change', (event) => {
+            const astId = event.target.value;
+            loadCategories(astId);
+        });
+    </script>
+</body>
+</html>

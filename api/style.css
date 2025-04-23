@@ -1,0 +1,100 @@
+* { 
+    font-family: Phetsarath OT, sans-serif;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+input, select {
+    /* font-family: Phetsarath OT, sans-serif; */
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+input:focus {
+    /* font-family: Phetsarath OT, sans-serif; */
+    outline: none;
+    border-color: #28a745;
+}
+
+button {
+    /* font-family: Phetsarath OT, sans-serif; */
+    background: #28a745;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #218838;
+}
+
+.two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+    .container {
+        padding: 15px;
+    }
+}

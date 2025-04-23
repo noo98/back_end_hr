@@ -5,16 +5,15 @@ from .models import Department,activity,document_lcic,Document_format,Document_t
 from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,
                      ForeignLanguage,WorkExperience,TrainingCourse,Award, DisciplinaryAction, FamilyMember, Evaluation)
 from .models import Status,Sidebar,Document_Status
+import datetime
+from django.db import transaction
+from django.db.models import Max
 
 class SystemUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemUser
         fields = '__all__'
 
-class PersonalInformationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PersonalInformation
-        fields = '__all__'
 class EducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Education
@@ -56,10 +55,35 @@ class EvaluationSerializer(serializers.ModelSerializer):
         model = Evaluation
         fields = '__all__'
 
-class EmployeeSerializer(serializers.ModelSerializer): 
+class PersonalInformationSerializer(serializers.ModelSerializer):
+    # education = EducationSerializer(many=True, read_only=True, source="education_set")
+    class Meta:
+        model = PersonalInformation
+        fields = '__all__'
+
+class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee_lcic
         fields = '__all__'
+
+
+    # def validate_Department(self, value):
+    #     # ตรวจสอบว่า Department มีอยู่ในฐานข้อมูล
+    #     if not Department.objects.filter(id=value.id).exists():
+    #         raise serializers.ValidationError("Department does not exist.")
+    #     return value
+
+    # def validate_pic(self, value):
+    #     # เพิ่มการตรวจสอบเพิ่มเติมสำหรับ pic (ถ้าจำเป็น)
+    #     if value:
+    #         if value.size > 5 * 1024 * 1024:
+    #             raise serializers.ValidationError("Image file too large (max 5MB).")
+    #         if value.content_type not in ['image/jpeg', 'image/png']:
+    #             raise serializers.ValidationError("Unsupported image format (only JPEG/PNG allowed).")
+    #     return value 
+
+
+
 
 class DocumentFormatSerializer(serializers.ModelSerializer):
     department_id = serializers.IntegerField(source="Department.id", read_only=True)
@@ -122,10 +146,33 @@ class document_lcicSerializer(serializers.ModelSerializer):
             "status2"
         ]
 
-class document_lcic_addSerializer(serializers.ModelSerializer):
+class DocumentLcic_AddSerializer(serializers.ModelSerializer):
     class Meta:
         model = document_lcic
-        fields = '__all__'  
+        fields = '__all__'
+        
+    def create(self, validated_data):
+        department = validated_data.get("department")
+        if department:
+            prefix = getattr(department, "name_e", "")[:2].upper()
+            today = datetime.date.today()
+            date_part = today.strftime("%d%m%Y")
+            last_doc = document_lcic.objects.filter(
+                department=department,
+                doc_number__startswith=f"{prefix}-"
+            ).order_by('-doc_number').first()
+            if last_doc and last_doc.doc_number:
+                try:
+                    last_number = int(last_doc.doc_number.split('-')[-1])
+                    new_number = last_number + 1
+                except ValueError:
+                    new_number = 1
+            else:
+                new_number = 1
+            validated_data["doc_number"] = f"{prefix}-{date_part}-{new_number:03d}"
+        return super().create(validated_data)
+
+
 
 class activitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -135,7 +182,7 @@ class activitySerializer(serializers.ModelSerializer):
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'name_e']
 
 # class Document_formatSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -150,8 +197,27 @@ class Document_typeSerializer(serializers.ModelSerializer):
 class document_general_Serializer(serializers.ModelSerializer):  
     class Meta:
         model = document_general
-        fields = '__all__'  
+        fields = '__all__' 
 
+    def create(self, validated_data):
+        department = validated_data.get("department")
+        # ສ້າງ `doc_number` ໃຫ້ອັດຕະໂນມັດ
+        if "doc_number" not in validated_data or not validated_data["doc_number"]:
+            prefix = department.name_e[:2].upper()
+            today = datetime.date.today()
+            date_part = today.strftime("%d%m%Y")
+            last_doc = document_general.objects.filter(
+                department=department,
+                doc_number__startswith=f"{prefix}"
+            ).order_by('-doc_number').first()
+            if last_doc:
+                last_number = int(last_doc.doc_number.split('-')[-1])
+                new_number = last_number + 1
+            else:
+                new_number = 1
+            validated_data["doc_number"] = f"{prefix}-{date_part}-{new_number:03d}"
+        return super().create(validated_data)
+    
 # class document_generalSerializer(serializers.ModelSerializer):
 #     format = DocumentFormatSerializer()  # Nested format
 #     department = DepartmentSerializer()  # Nested department
@@ -171,8 +237,42 @@ class SidebarSerializer(serializers.ModelSerializer):
         model = Sidebar
         fields = '__all__'
 class UpdateDocSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = document_lcic
         fields = '__all__'
 
+class User_emp_Serializer(serializers.ModelSerializer):
+    Employee = EmployeeSerializer()
+    class Meta:
+        model = SystemUser
+        fields = '__all__'
+
+# class Asset_typeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Asset_type
+#         fields = '__all__'
+
+# class categorySerializer(serializers.ModelSerializer):
+#         class Meta:
+#                 model = Category
+#                 fields = ['cat_id', 'ast_id', 'cat_num', 'cat_name']
+#                 read_only_fields = ['cat_id', 'cat_num']  # ກຳນົດໃຫ້ cat_num ບໍ່ສາມາດແກ້ໄຂໄດ້
+
+#         def create(self, validated_data):
+#                 with transaction.atomic():
+#                     # ຄົ້ນຫາ cat_num ທີ່ມີຄ່າສູງສຸດ
+#                     max_num = Category.objects.aggregate(Max('cat_num'))['cat_num__max']
+#                     if max_num:
+#                         # ສະກັດຕົວເລກຈາກ cat_num (ເຊັ່ນ: "01" -> 1)
+#                         num = int(max_num) + 1
+#                     else:
+#                         num = 1
+#                     # ສ້າງລະຫັດໃໝ່ໃນຮູບແບບ 01, 02, ...
+#                     validated_data['cat_num'] = f'{num:02d}'
+#                     # ສ້າງ object ໃໝ່
+#                     return Category.objects.create(**validated_data)
+
+# class AssetSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Asset
+#         fields = '__all__'

@@ -113,10 +113,10 @@ WSGI_APPLICATION = 'backend_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',  
-        'NAME': 'hr_server',                      
+        'NAME': 'hr_dev',                      
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
-        'HOST': '192.168.45.53',                      
+        'HOST': '192.168.45.52',                      
         'PORT': '5432',
         'OPTIONS': {'client_encoding': 'UTF8'},            
          'TEST': {
@@ -172,16 +172,19 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     'http://192.168.45.33',  
-    'http://192.168.45.71:3000',
+    'http://192.168.45.52:8000',
     'http://192.168.45.231:3000',
-    'http://192.168.45.33:3000',
+    'http://192.168.45.53:3000',
     'http://192.168.45.33:80',
+    'http://127.0.0.1:5500'
 ]
-ALLOWED_HOSTS = ['192.168.45.53']
+ALLOWED_HOSTS = ['192.168.45.52']
 # ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 import os
 
 MEDIA_URL = '/media/'  # URL ສໍາລັບເປີດຟາຍ
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # ທີ່ຢູ່ຂອງຟາຍ
+
+APPEND_SLASH=False
 

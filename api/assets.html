@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Asset List</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+  <style>
+    body {
+      font-family: 'Phetsarath OT', sans-serif;
+      background-color: #f4f6f9;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    table.dataTable thead {
+      background-color: #3498db;
+      color: white;
+    }
+
+    #qrModal, #scannerModal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #qrModalContent, #scannerModalContent {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      position: relative;
+      max-width: 90%;
+    }
+
+    .btn-qr, .btn-scan, .btn-print {
+      padding: 6px 12px;
+      background-color: #2ecc71;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .btn-scan {
+      background-color: #e67e22;
+      margin-bottom: 20px;
+    }
+
+    .btn-print {
+      background-color: #9b59b6;
+    }
+
+    #scannerContainer {
+      width: 300px;
+      height: 300px;
+    }
+
+    #qrCanvas {
+      width: 4cm;
+      height: 4cm;
+    }
+
+    #qrCodeText {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    #printContainer {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+    }
+
+    @media (max-width: 600px) {
+      #scannerContainer {
+        width: 250px;
+        height: 250px;
+      }
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printContainer, #printContainer * {
+        visibility: visible;
+      }
+      #printContainer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #printQR {
+        display: block;
+        width: 4cm !important;
+        height: 4cm !important;
+        border: 2mm solid white;
+        box-sizing: content-box;
+      }
+      #printText {
+        display: block;
+        position: absolute;
+        top: calc(100% + -5mm);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 17px;
+        font-weight: bold;
+        font-family: 'Kanit', sans-serif;
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>ຂໍ້ມູນຊັບສິນ</h1>
+    <button class="btn-scan" onclick="showScanner()">ສະແກນຄິວອາໂຄດ</button>
+    <table id="asset-table" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Code</th>
+          <th>Status</th>
+          <th>Value</th>
+          <th>Use Date</th>
+          <th>Expiration Date</th>
+          <th>Life Left</th>
+          <th>Location</th>
+          <th>Employee</th>
+          <th>Note</th>
+          <th>Asset Type</th>
+          <th>Category</th>
+          <th>QR Code</th>
+        </tr>
+      </thead>
+      <tbody id="asset-body">
+        <!-- Data from API will be loaded here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QR Display Modal -->
+  <div id="qrModal">
+    <div id="qrModalContent">
+      <h3>ລະຫັດ QR</h3>
+      <canvas id="qrCanvas"></canvas>
+      <p id="qrCodeText"></p>
+      <button onclick="printQR()" class="btn-print" style="margin-top:10px;">ປິ້ນຄິວອາໂຄດ</button>
+      <button onclick="closeQR()" class="btn-qr" style="margin-top:10px;">ປິດ</button>
+    </div>
+  </div>
+
+  <!-- QR Scanner Modal -->
+  <div id="scannerModal">
+    <div id="scannerModalContent">
+      <h3>ສະແກນຄິວອາໂຄດ</h3>
+      <div id="scannerContainer"></div>
+      <button onclick="closeScanner()" class="btn-qr" style="margin-top:10px;">ປິດ</button>
+    </div>
+  </div>
+
+  <!-- Print Container -->
+  <div id="printContainer"></div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+
+  <script>
+    // Configurable API URL
+    const API_URL = 'http://192.168.45.52:8000/api/assets/';
+    let dataTable = null;
+    let html5QrcodeScanner = null;
+
+    // Load data
+    async function loadAssets() {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch assets');
+        const data = await response.json();
+
+        const tableBody = document.getElementById('asset-body');
+        data.forEach(asset => {
+          const row = document.createElement('tr');
+          row.appendChild(createCell(asset.as_id));
+          row.appendChild(createCell(asset.code));
+          row.appendChild(createCell(asset.dep_status));
+          row.appendChild(createCell(asset.value));
+          row.appendChild(createCell(asset.date_use));
+          row.appendChild(createCell(asset.date_exp));
+          row.appendChild(createCell(asset.life_left));
+          row.appendChild(createCell(asset.location));
+          row.appendChild(createCell(asset.emp_user));
+          row.appendChild(createCell(asset.note));
+          row.appendChild(createCell(asset.ast_id));
+          row.appendChild(createCell(asset.cat_id));
+          row.appendChild(createQRCell(asset.code));
+          tableBody.appendChild(row);
+        });
+
+        // Activate DataTable
+        dataTable = $('#asset-table').DataTable({
+          pageLength: 10,
+          responsive: true,
+          language: {
+            search: 'ຄົ້ນຫາ:',
+            lengthMenu: 'ສະແດງ _MENU_ ລາຍການ',
+            info: 'ສະແດງ _START_ ຫາ _END_ ຈາກ _TOTAL_ ລາຍການ',
+            paginate: {
+              first: 'ຫນ້າທຳອິດ',
+              last: 'ຫນ້າສຸດທ້າຍ',
+              next: 'ຖັດໄປ',
+              previous: 'ກ່ອນໜ້າ',
+            },
+          },
+        });
+      } catch (error) {
+        console.error('Error loading assets:', error);
+        alert('ບໍ່ສາມາດໂຫລດຂໍ້ມູນຊັບສິນໄດ້, ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.');
+      }
+    }
+
+    // Helper to create table cell
+    function createCell(text) {
+      const cell = document.createElement('td');
+      cell.textContent = text || '-';
+      return cell;
+    }
+
+    // Helper to create QR button cell
+    function createQRCell(code) {
+      const cell = document.createElement('td');
+      const button = document.createElement('button');
+      button.className = 'btn-qr';
+      button.textContent = 'QR';
+      button.onclick = () => showQR(code);
+      cell.appendChild(button);
+      return cell;
+    }
+
+    // QR Display Modal logic
+    const qr = new QRious({
+      element: document.getElementById('qrCanvas'),
+      size: 472, // High resolution for 300 DPI at 4cm
+      level: 'H', // High error correction for scannability
+      value: '',
+    });
+
+    function showQR(codeValue) {
+      qr.set({ value: codeValue });
+      document.getElementById('qrCodeText').textContent = codeValue;
+      const modal = document.getElementById('qrModal');
+      modal.style.display = 'flex';
+      modal.querySelector('.btn-print').focus();
+    }
+
+    function closeQR() {
+      document.getElementById('qrModal').style.display = 'none';
+      document.getElementById('qrCodeText').textContent = '';
+    }
+
+    function printQR() {
+      const canvas = document.getElementById('qrCanvas');
+      const qrImage = document.createElement('img');
+      qrImage.id = 'printQR';
+      qrImage.src = canvas.toDataURL('image/png');
+      const codeText = document.createElement('p');
+      codeText.id = 'printText';
+      codeText.textContent = qr.value;
+
+      const printContainer = document.getElementById('printContainer');
+      printContainer.innerHTML = '';
+      printContainer.appendChild(qrImage);
+      printContainer.appendChild(codeText);
+
+      console.log('Printing QR code with src:', qrImage.src);
+
+      // Ensure image is loaded before printing
+      qrImage.onload = () => {
+        setTimeout(() => {
+          window.print();
+          printContainer.innerHTML = ''; // Clean up
+        }, 100); // Small delay to ensure rendering
+      };
+
+      // Fallback in case onload doesn't fire
+      setTimeout(() => {
+        window.print();
+        printContainer.innerHTML = ''; // Clean up
+      }, 500);
+    }
+
+    // QR Scanner Modal logic
+    function showScanner() {
+      const modal = document.getElementById('scannerModal');
+      modal.style.display = 'flex';
+      modal.querySelector('button').focus();
+
+      html5QrcodeScanner = new Html5Qrcode('scannerContainer');
+      html5QrcodeScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          if (dataTable) {
+            dataTable.search(decodedText).draw();
+          }
+          closeScanner();
+        },
+        (error) => {
+          console.warn('QR scan error:', error);
+        }
+      ).catch((err) => {
+        console.error('Scanner start error:', err);
+        alert('ບໍ່ສາມາດເປີດກ້ອງສະແກນໄດ້, ກະລຸນາກວດສອບອະນຸຍາດກ້ອງ.');
+        closeScanner();
+      });
+    }
+
+    function closeScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          html5QrcodeScanner.clear();
+          html5QrcodeScanner = null;
+        }).catch((err) => {
+          console.error('Scanner stop error:', err);
+        });
+      }
+      document.getElementById('scannerModal').style.display = 'none';
+    }
+
+    // Keyboard support for modals
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (document.getElementById('qrModal').style.display === 'flex') {
+          closeQR();
+        }
+        if (document.getElementById('scannerModal').style.display === 'flex') {
+          closeScanner();
+        }
+      }
+    });
+
+    // Load assets on page load
+    document.addEventListener('DOMContentLoaded', loadAssets);
+  </script>
+</body>
+</html>

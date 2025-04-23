@@ -6,7 +6,8 @@ from .views import activityCreateView,activityListView,activityDeleteView,activi
 from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View,DocumentFormatSearchView
 from .views import Department_AddView,Department_UpdateView,Department_DeleteView,document_lcic_List_idView,document_general_SearchView
 from .views import Document_format_ListView,Document_format_AddView,Document_format_UpdateView,Document_format_DeleteView,Document_format_idView
-from .views import PersonalEducationCreateView,sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView
+from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView,user_empView
+# from .views import AssetTypeView,AssetView,CategoryView,CategorySearchView
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import update_view_status
@@ -17,6 +18,7 @@ urlpatterns = [
     path('users/<int:us_id>/', UserView.as_view(), name='user-update-delete'),
     path('users/<str:username>/', UserView.as_view(), name='username'),
     path('login/', LoginView.as_view(), name='login'),
+    path('user_emp/', user_empView.as_view(), name='user_emp-list'),
 
     path('permission/', permission_lcic_View.as_view(), name='permission-list-create'),
     path('permission/<int:sta_id>/', permission_lcic_View.as_view(), name='permission-update-delete'),
@@ -61,11 +63,19 @@ urlpatterns = [
     path('auto-update-status/', AutoUpdateStatusDocAPIView.as_view(), name='auto_update_status_doc'),
 
 
-    path('personal/', PersonalEducationCreateView.as_view(), name='personal-education-create'),
-    path('personal/<int:per_id>/', PersonalEducationCreateView.as_view(), name='personal-update-delete'),
+    # path('personal/', PersonalEducationCreateView.as_view(), name='personal-education-create'),
+    # path('personal/<int:per_id>/', PersonalEducationCreateView.as_view(), name='personal-update-delete'),
 
     path('update_doc_status/', docstatus.as_view(), name='update-document-status'),
 
-  
+    # path('asset_types/', AssetTypeView.as_view()),
+    # path('asset_types/<int:ast_id>/', AssetTypeView.as_view()),
 
-]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+    # path('assets/', AssetView.as_view()),
+    # path('assets/<int:as_id>/', AssetView.as_view()),
+    
+    # path('category/', CategoryView.as_view()),
+    # path('category/<int:cat_id>/', CategoryView.as_view()),
+    # path('category/search/', CategorySearchView.as_view(), name='category-search'),
+
+]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -437,3 +437,300 @@ class Employee_lcic(models.Model):
 
     def __str__(self):
         return f"{self.emp_id} - {self.name_E} ({self.nickname})"
+    
+
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)  # ບຸກຄົນ
+
+
+class Employee_lcic(models.Model):
+    emp_id = models.AutoField(primary_key=True)  # ລະຫັດພະນັກງານ
+    lao_name = models.CharField(max_length=100)  # ຊື່ພາສາລາວ
+    eng_name = models.CharField(max_length=100)  # ຊື່ພາສາອັງກິດ
+    nickname = models.CharField(max_length=50, blank=True, null=True)  # ຊື່ຫຼິ້ນ
+    Gender = models.CharField(max_length=100)  #ເພດ
+    birth_date = models.CharField(max_length=100, blank=True, null=True) # ວັນເດືອນປີເກີດ
+    status = models.CharField(max_length=20)  # ສະຖານະພາບ (ເຊັ່ນ ໂສດ, ແຕ່ງງານ)
+    Department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    position = models.CharField(max_length=100)  # ຕຳແໜ່ງ
+    year_entry = models.CharField(null=True)  # ປີເຂົ້າເຮັດວຽກ
+    salary_level = models.CharField(max_length=100)# ຂັ້ນເງິນເດືອນ
+    phone = models.CharField(max_length=20)  # ເບີໂທ
+    pic = models.ImageField(upload_to='emp_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
+
+    def __str__(self):
+        return f"{self.emp_id} - {self.name_E} ({self.nickname})"
+    
+class PersonalInformation(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    full_name = models.CharField(max_length=255)  # ຊື່ເຕັມ
+    dob = models.CharField(max_length=100)  # ວັນເກີດ
+    eth = models.CharField(max_length=100)  # ຊົນເຜົ່າ
+    rel = models.CharField(max_length=100)  # ສາສະໜາ
+    b_vill = models.CharField(max_length=100)  # ບ້ານເກີດ
+    b_dist = models.CharField(max_length=100)  # ເມືອງເກີດ
+    b_prov = models.CharField(max_length=100)  # ແຂວງເກີດ
+    c_vill = models.CharField(max_length=100)  # ບ້ານປັດຈຸບັນ
+    c_dist = models.CharField(max_length=100)  # ເມືອງປັດຈຸບັນ
+    c_prov = models.CharField(max_length=100)  # ແຂວງປັດຈຸບັນ
+    gov_entry = models.CharField(max_length=100)  # ວັນເຂົ້າສັງກັດລັດ(ພະນັກງານສົມບູນ)
+    youth_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກຊາວໝຸ່ມ
+    women_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກແມ່ຍິງ
+    union_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກກຳມະບານ
+    party_cand_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກພັັກສຳຮອງ
+    full_party_date = models.DateField(null=True, blank=True)  # ວັນເຂົ້າເປັນສະມາຊິກພັກສົມບູນ
+    curr_party_pos = models.CharField(max_length=255, null=True, blank=True)  # ຕຳແໜ່ງຂອງພັກປັດຈຸບັນ
+    party_apt_date = models.DateField(null=True, blank=True)  # ວັນທີເດືອນປີແຕ່ງຕັ້ງຄຕຳແໜ່ງຂອງພັກ
+    curr_gov_pos = models.CharField(max_length=255, null=True, blank=True)  # ຕຳແໜ່ງເບື່ອງລັດປັດຈຸບັນ
+    gov_apt_date = models.DateField(null=True, blank=True)  # ວັນທີເດືອນປີແຕ່ງຕັ້ງຕຳແໜ່ງຂອງລັດ
+
+class Education(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    level = models.CharField(max_length=255)  # ຂັ້ນ
+    school = models.CharField(max_length=255)  # ຊື່ໂຮງຮຽນ
+    year = models.IntegerField()  # ປີ
+    dom_abrd = models.CharField(max_length=50)  # ພາຍໃນ/ຕ່າງປະເທດ
+
+class SpecializedEducation(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    field = models.CharField(max_length=255)  # ຂະແໜງສຶກສາ
+    inst = models.CharField(max_length=255)  # ສະຖາບັນ
+    level = models.CharField(max_length=100)  # ຂັ້ນ
+    year = models.IntegerField()  # ປີ
+    dom_abrd = models.CharField(max_length=50)  # ພາຍໃນ/ຕ່າງປະເທດ
+
+class PoliticalTheoryEducation(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    inst = models.CharField(max_length=255)  # ສະຖາບັນ
+    level = models.CharField(max_length=100)  # ຂັ້ນ
+    year = models.IntegerField()  # ປີ
+    dom_abrd = models.CharField(max_length=50)  # ພາຍໃນ/ຕ່າງປະເທດ
+
+class ForeignLanguage(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    lang = models.CharField(max_length=100)  # ພາສາ
+    prof = models.CharField(max_length=50)  # ຄວາມຊໍານານ
+
+class WorkExperience(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    work = models.CharField(max_length=255)  # ສະຖານທີ່ເຮັດວຽກ
+    start = models.DateField()  # ວັນເລີ່ມຕົ້ນ
+    end = models.DateField()  # ວັນຈົບ
+    gov_pos = models.CharField(max_length=255)  # ຕໍາແຫນໃນລັດຕະການ
+    party_pos = models.CharField(max_length=255, null=True, blank=True)  # ຕໍາແຫນຂອງພັກ
+
+class TrainingCourse(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    start = models.DateField()  # ວັນເລີ່ມຕົ້ນ
+    end = models.DateField()  # ວັນຈົບ
+    subj = models.CharField(max_length=255)  # ວິຊາ
+    inst = models.CharField(max_length=255)  # ສະຖາບັນ
+    country = models.CharField(max_length=100)  # ປະເທດ
+    
+class Award(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    dec_num = models.CharField(max_length=100)  # ເລກທີ່ການຕັດສິນໃຈ
+    date = models.DateField()  # ວັນທີ
+    award_type = models.CharField(max_length=255)  # ປະເພດລາງວັນ
+    reason = models.TextField()  # ເຫດຜົນ
+
+class DisciplinaryAction(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    dec_num = models.CharField(max_length=100)  # ເລກທີ່ການຕັດສິນໃຈ
+    date = models.DateField()  # ວັນທີ
+    action_type = models.CharField(max_length=255)  # ປະເພດມາດຕະການ
+    reason = models.TextField()  # ເຫດຜົນ
+
+class FamilyMember(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    relation = models.CharField(max_length=50)  # ຄວາມສຳພັນ (ເມຍ, ພໍ່, ແມ່, ເຫຼົ້າ)
+    full_name = models.CharField(max_length=255)  # ຊື່ເຕັມ
+    dob = models.DateField()  # ວັນເກີດ
+    eth = models.CharField(max_length=100, null=True, blank=True)  # ຊົນເຜົ່າ
+    rel = models.CharField(max_length=100, null=True, blank=True)  # ສາສະໜາ
+    occ = models.CharField(max_length=255, null=True, blank=True)  # ອາຊີບ
+    work = models.CharField(max_length=255, null=True, blank=True)  # ສະຖານທີ່ເຮັດວຽກ
+    vill = models.CharField(max_length=100, null=True, blank=True)  # ບ້ານ
+    dist = models.CharField(max_length=100, null=True, blank=True)  # ເມືອງ
+    prov = models.CharField(max_length=100, null=True, blank=True)  # ແຂວງ
+
+class Evaluation(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+    strengths = models.TextField()  # ຈຸດແຂງແຮງ
+    weaknesses = models.TextField()  # ຈຸດອ່ອນ
+
+    def __str__(self):
+        return self.emp_id
+    
+
+class Account(models.Model):
+    id = models.AutoField(primary_key=True)  # ID
+    number = models.CharField(max_length=100, unique=True)  # ເລກທີ່ບັນຊີ
+    asset_type = models.CharField(max_length=100)  # ປະເພດຊັບສິນ
+
+class Asset(models.Model):
+    id = models.AutoField(primary_key=True)  # ID
+    code = models.CharField(max_length=100,unique=True)  # ລະຫັດຊັບສິນ
+    ac_num = models.ForeignKey(Account, on_delete=models.CASCADE,unique=True)  # ເລກທີ່ບັນຊີ
+    ac_name = models.CharField(max_length=500)  # ເນື້ອໃນລາຍການ
+    dep_status = models.CharField(max_length=100)  # ສະຖານະຫຼຸ້ຍຫ້ຽນ
+    value = models.DecimalField(max_digits=20, decimal_places=2)  # ມູນຄ່າເດີມ (ກີບ)
+    date_use = models.DateField()  # ວ/ດ/ປ ນໍາໃຊ້
+    date_exp = models.DateField()  # ວ/ດ/ປ ໝົດອາຍຸນໍາໃຊ້
+    life_left = models.IntegerField()  # ອາຍຸຍັງເຫຼືອ (ເດືອນ)
+    location = models.CharField(max_length=200)  # ທີ່ຕັ້ງຊັບສິນ
+    emp_user = models.CharField(max_length=100)  # ຜູ້ນຳໃຊ້
+    note = models.TextField(blank=True, null=True)  # ໝາຍເຫດ
+
+    def __str__(self):
+        return f"{self.code} - {self.desc}"
+
+
+    def put(self, request, per_id: int):
+        data = request.data
+        personal_data = data.get('personal_information', {})
+        family_data = data.get('family_members', [])
+        evaluation_data = data.get('evaluation', {})
+        education_data = data.get('education', [])
+        specialized_data = data.get('specialized_education', [])
+        political_data = data.get('political_theory_education', [])
+        language_data = data.get('foreign_languages', [])
+        work_data = data.get('work_experiences', [])
+        training_data = data.get('training_courses', [])
+        award_data = data.get('awards', [])
+        disciplinary_data = data.get('disciplinary_actions', [])
+
+        personal_instance = get_object_or_404(PersonalInformation, per_id=per_id)
+
+        try:
+            with transaction.atomic():
+                # 1. Update Personal Information
+                personal_serializer = PersonalInformationSerializer(personal_instance, data=personal_data, partial=True)
+                personal_serializer.is_valid(raise_exception=True)
+                personal_serializer.save()
+
+                # 2. Update Related Many-to-Many Data (Using Bulk Operations)
+                def update_related_data(model_class, serializer_class, dataset):
+                    existing_items = {obj.id: obj for obj in model_class.objects.filter(per_id=per_id)}
+                    new_items = []
+                    for item in dataset:
+                        item["per_id"] = per_id
+                        if "id" in item and item["id"] in existing_items:
+                            serializer = serializer_class(existing_items[item["id"]], data=item, partial=True)
+                        else:
+                            serializer = serializer_class(data=item)
+                        serializer.is_valid(raise_exception=True)
+                        new_items.append(serializer)
+                    model_class.objects.bulk_create(
+                        [serializer.save() for serializer in new_items], ignore_conflicts=True
+                    )
+
+                update_related_data(FamilyMember, FamilyMemberSerializer, family_data)
+                update_related_data(Education, EducationSerializer, education_data)
+                update_related_data(SpecializedEducation, SpecializedEducationSerializer, specialized_data)
+                update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, political_data)
+                update_related_data(ForeignLanguage, ForeignLanguageSerializer, language_data)
+                update_related_data(WorkExperience, WorkExperienceSerializer, work_data)
+                update_related_data(TrainingCourse, TrainingCourseSerializer, training_data)
+                update_related_data(Award, AwardSerializer, award_data)
+                update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, disciplinary_data)
+
+                # 3. Update Evaluation (If exists)
+                if evaluation_data:
+                    evaluation_instance, _ = Evaluation.objects.update_or_create(per_id=per_id, defaults=evaluation_data)
+
+            return Response({
+                "message": "ອັບເດດສຳເລັດ",
+                "per_id": per_id,
+                "name": personal_instance.full_name
+            }, status=status.HTTP_200_OK)
+
+        except ValidationError as e:
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+def put(self, request, emp_id: int):
+    # Parse incoming data directly from request.data
+    data = request.data
+    employee_data = data.get('employee', {})
+    personal_data = data.get('personal_information', {})
+    family_data = data.get('family_members', [])
+    evaluation_data = data.get('evaluation', {})
+    education_data = data.get('education', [])
+    specialized_data = data.get('specialized_education', [])
+    political_data = data.get('political_theory_education', [])
+    language_data = data.get('foreign_languages', [])
+    work_data = data.get('work_experiences', [])
+    training_data = data.get('training_courses', [])
+    award_data = data.get('awards', [])
+    disciplinary_data = data.get('disciplinary_actions', [])
+
+    # Get existing employee instance or 404
+    employee_instance = get_object_or_404(Employee_lcic, emp_id=emp_id)
+
+    try:
+        with transaction.atomic():
+            # 1. Update Employee_lcic
+            if employee_data:
+                employee_serializer = EmployeeSerializer(employee_instance, data=employee_data, partial=True)
+                employee_serializer.is_valid(raise_exception=True)
+                employee_serializer.save()
+
+            # 3. Update Related Many-to-Many Data
+            def update_related_data(model_class, serializer_class, dataset):
+                existing_items = {obj.id: obj for obj in model_class.objects.filter(emp_id=emp_id)}
+                new_items = []
+                for item in dataset:
+                    item["emp_id"] = emp_id
+                    if "id" in item and item["id"] in existing_items:
+                        serializer = serializer_class(existing_items[item["id"]], data=item, partial=True)
+                    else:
+                        serializer = serializer_class(data=item)
+                    serializer.is_valid(raise_exception=True)
+                    new_items.append(serializer)
+                model_class.objects.bulk_create(
+                    [serializer.save() for serializer in new_items], ignore_conflicts=True
+                )
+            update_related_data(PersonalInformation, PersonalInformationSerializer, personal_data)
+            update_related_data(FamilyMember, FamilyMemberSerializer, family_data)
+            update_related_data(Education, EducationSerializer, education_data)
+            update_related_data(SpecializedEducation, SpecializedEducationSerializer, specialized_data)
+            update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, political_data)
+            update_related_data(ForeignLanguage, ForeignLanguageSerializer, language_data)
+            update_related_data(WorkExperience, WorkExperienceSerializer, work_data)
+            update_related_data(TrainingCourse, TrainingCourseSerializer, training_data)
+            update_related_data(Award, AwardSerializer, award_data)
+            update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, disciplinary_data)
+
+            # 4. Update Evaluation (If exists)
+            if evaluation_data:
+                evaluation_instance, _ = Evaluation.objects.update_or_create(
+                    emp_id=emp_id, 
+                    defaults=evaluation_data
+                )
+
+            return Response({
+                "message": "ອັບເດດສຳເລັດ",
+                "emp_id": emp_id,
+                "name": employee_instance.lao_name
+            }, status=status.HTTP_200_OK)
+
+    except ValidationError as e:
+        logger.error(f"Validation error updating emp_id {emp_id}: {str(e)}")
+        return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"Error updating emp_id {emp_id}: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class Asset_Transfer(models.Model):
+    ast_id = models.ForeignKey(Asset, on_delete=models.CASCADE)  # ລະຫັດຊັບສິນ
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)  # ລະຫັດເພະນັກງານ
+    date = models.DateField()  # ວ/ດ/ປ ຍ່າຍ
+    location = models.CharField(max_length=200)  # ສະຖານທີ່ໃໝ່ 
+    note = models.TextField(blank=True, null=True)  # ໝາຍເຫດ
+    status = models.CharField(max_length=100, blank=True)  # ສະຖານະການຍ່າຍ
+    def __str__(self):
+        return f"{self.ast_id} - {self.emp_id} - {self.date} - {self.location}"

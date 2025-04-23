@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ຟອມຂໍ້ມູນພະນັກງານ ແລະ ຂໍ້ມູນສ່ວນຕົວ</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<style>
+    * { 
+    font-family: Phetsarath OT, sans-serif;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+input, select {
+    /* font-family: Phetsarath OT, sans-serif; */
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+input:focus {
+    /* font-family: Phetsarath OT, sans-serif; */
+    outline: none;
+    border-color: #28a745;
+}
+
+button {
+    /* font-family: Phetsarath OT, sans-serif; */
+    background: #28a745;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #218838;
+}
+
+.two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+    .container {
+        padding: 15px;
+    }
+}
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="form-section" id="employeeSection">
+            <h1>ຟອມຂໍ້ມູນພະນັກງານ</h1>
+            <form id="employeeForm">
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຊື່ພາສາລາວ:</label>
+                        <input type="text" name="lao_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ຊື່ພາສາອັງກິດ:</label>
+                        <input type="text" name="eng_name" required>
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຊື່ຫຼິ້ນ:</label>
+                        <input type="text" name="nickname">
+                    </div>
+                    <div class="form-group">
+                        <label>ເພດ:</label>
+                        <select name="Gender" required>
+                            <option value="">ເລືອກເພດ</option>
+                            <option value="ຊາຍ">ຊາຍ</option>
+                            <option value="ຍິງ">ຍິງ</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ວັນເດືອນປີເກີດ:</label>
+                        <input type="date" name="birth_date">
+                    </div>
+                    <div class="form-group">
+                        <label>ສະຖານະພາບ:</label>
+                        <select name="status">
+                            <option value="">ເລືອກສະຖານະ</option>
+                            <option value="ໂສດ">ໂສດ</option>
+                            <option value="ແຕ່ງງານ">ແຕ່ງງານ</option>
+                            <option value="ຢ່າຮ້າງ">ຢ່າຮ້າງ</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຕຳແໜ່ງ:</label>
+                        <input type="text" name="position">
+                    </div>
+                    <div class="form-group">
+                        <label>ປີເຂົ້າເຮັດວຽກ:</label>
+                        <input type="number" name="year_entry" min="1900" max="2100">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຂັ້ນເງິນເດືອນ:</label>
+                        <input type="text" name="salary_level">
+                    </div>
+                    <div class="form-group">
+                        <label>ເບີໂທ:</label>
+                        <input type="tel" name="phone" pattern="[0-9]{8,11}">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຮູບໂປຣຟາຍ:</label>
+                        <input type="file" name="pic" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>ພະແນກ:</label>
+                        <input type="number" name="Department" min="1">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <button type="button" onclick="submitEmployee()" id="saveEmployeeBtn">ບັນທຶກ</button>
+        <button type="button" onclick="togglePersonalForm()" id="addPersonalBtn">ເພີ່ມຂໍ້ມູນສ່ວນຕົວ</button>
+        
+        <div class="form-section hidden" id="personalSection">
+            <h1>ຟອມຂໍ້ມູນສ່ວນຕົວ</h1>
+            <form id="personalInfoForm">
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຊື່ເຕັມ:</label>
+                        <input type="text" name="full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນເກີດ:</label>
+                        <input type="date" name="dob">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຊົນເຜົ່າ:</label>
+                        <input type="text" name="eth">
+                    </div>
+                    <div class="form-group">
+                        <label>ສາສະໜາ:</label>
+                        <input type="text" name="rel">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ບ້ານເກີດ:</label>
+                        <input type="text" name="b_vill">
+                    </div>
+                    <div class="form-group">
+                        <label>ເມືອງເກີດ:</label>
+                        <input type="text" name="b_dist">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ແຂວງເກີດ:</label>
+                        <input type="text" name="b_prov">
+                    </div>
+                    <div class="form-group">
+                        <label>ບ້ານປັດຈຸບັນ:</label>
+                        <input type="text" name="c_vill">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ເມືອງປັດຈຸບັນ:</label>
+                        <input type="text" name="c_dist">
+                    </div>
+                    <div class="form-group">
+                        <label>ແຂວງປັດຈຸບັນ:</label>
+                        <input type="text" name="c_prov">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າສັງກັດລັດ:</label>
+                        <input type="date" name="gov_entry">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າເປັນສະມາຊິກຊາວໝຸ່ມ:</label>
+                        <input type="date" name="youth_date">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າເປັນສະມາຊິກແມ່ຍິງ:</label>
+                        <input type="date" name="women_date">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າເປັນສະມາຊິກກຳມະບານ:</label>
+                        <input type="date" name="union_date">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າເປັນສະມາຊິກພັກສຳຮອງ:</label>
+                        <input type="date" name="party_cand_date">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນເຂົ້າເປັນສະມາຊິກພັກສົມບູນ:</label>
+                        <input type="date" name="full_party_date">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຕຳແໜ່ງຂອງພັກປັດຈຸບັນ:</label>
+                        <input type="text" name="curr_party_pos">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນແຕ່ງຕັ້ງຕຳແໜ່ງຂອງພັກ:</label>
+                        <input type="date" name="party_apt_date">
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ຕຳແໜ່ງເບື່ອງລັດປັດຈຸບັນ:</label>
+                        <input type="text" name="curr_gov_pos">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນແຕ່ງຕັ້ງຕຳແໜ່ງຂອງລັດ:</label>
+                        <input type="date" name="gov_apt_date">
+                    </div>
+                </div>
+                <button type="button" onclick="submitPersonalForm()" id="savePersonalBtn" class="hidden">ບັນທຶກ</button>
+                <button type="button" onclick="goBack()" id="backPersonalBtn" class="hidden">ຍ້ອນກັບ</button>
+                <button type="button" onclick="toggleEducationForm()" id="addEducationBtn">ເພີ່ມຂໍ້ມູນການສຶກສາ</button>
+            </form>
+        </div>
+
+        <div class="form-section hidden" id="educationSection">
+            <h1>ຟອມຂໍ້ມູນການສຶກສາ</h1>
+            <form id="educationForm">
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ລະດັບການສຶກສາ:</label>
+                        <input type="text" name="level" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ໂຮງຮຽນ/ສະຖາບັນ:</label>
+                        <input type="text" name="school" required>
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label>ປີທີ່ຈົບ:</label>
+                        <input type="number" name="year" min="1900" max="2100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ພາຍໃນ/ຕ່າງປະເທດ:</label>
+                        <select name="dom_abrd" required>
+                            <option value="">ເລືອກ</option>
+                            <option value="ໃນປະເທດ">ໃນປະເທດ</option>
+                            <option value="ຕ່າງປະເທດ">ຕ່າງປະເທດ</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" onclick="submitCombinedForm()" id="saveEducationBtn" class="hidden">ບັນທຶກ</button>
+                <button type="button" onclick="goBack()" id="backEducationBtn">ຍ້ອນກັບ</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentLevel = 0; // 0: Employee, 1: Personal, 2: Education
+
+        function submitEmployee() {
+            const employeeForm = document.getElementById('employeeForm');
+            const employeeFormData = new FormData(employeeForm);
+
+            const jsonData = {
+                "Employee_lcic": [{
+                    "lao_name": employeeFormData.get("lao_name"),
+                    "eng_name": employeeFormData.get("eng_name"),
+                    "nickname": employeeFormData.get("nickname") || "null",
+                    "Gender": employeeFormData.get("Gender"),
+                    "birth_date": employeeFormData.get("birth_date") || "null",
+                    "status": employeeFormData.get("status") || "null",
+                    "position": employeeFormData.get("position") || "null",
+                    "year_entry": employeeFormData.get("year_entry") ? parseInt(employeeFormData.get("year_entry")) : null,
+                    "salary_level": employeeFormData.get("salary_level") || "null",
+                    "phone": employeeFormData.get("phone") || "null",
+                    "pic":employeeFormData.get("pic") ? employeeFormData.get("pic").name : null,
+                    "Department": employeeFormData.get("Department") ? parseInt(employeeFormData.get("Department")) : null
+                }]
+            };
+
+            console.log("Submitting Employee Data:", JSON.stringify(jsonData, null, 2));
+
+            axios.post('http://192.168.45.52:8000/api/employee/', jsonData, {
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                alert('ບັນທຶກຂໍ້ມູນພະນັກງານສຳເລັດ!');
+                employeeForm.reset();
+                document.getElementById('saveEmployeeBtn').classList.add('hidden');
+                document.getElementById('addPersonalBtn').classList.remove('hidden');
+            })
+            .catch(error => {
+                alert('ຜິດພາດ: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+
+        function togglePersonalForm() {
+            const personalSection = document.getElementById('personalSection');
+            const saveEmployeeBtn = document.getElementById('saveEmployeeBtn');
+            const savePersonalBtn = document.getElementById('savePersonalBtn');
+            const backPersonalBtn = document.getElementById('backPersonalBtn');
+            const addEducationBtn = document.getElementById('addEducationBtn');
+            
+            personalSection.classList.remove('hidden');
+            saveEmployeeBtn.classList.add('hidden');
+            savePersonalBtn.classList.remove('hidden');
+            backPersonalBtn.classList.remove('hidden');
+            addEducationBtn.classList.remove('hidden');
+            currentLevel = 1;
+        }
+
+        function submitPersonalForm() {
+            const employeeForm = document.getElementById('employeeForm');
+            const personalForm = document.getElementById('personalInfoForm');
+            const employeeFormData = new FormData(employeeForm);
+            const personalFormData = new FormData(personalForm);
+
+            const jsonData = {
+                "Employee_lcic": [{
+                    "lao_name": employeeFormData.get("lao_name"),
+                    "eng_name": employeeFormData.get("eng_name"),
+                    "nickname": employeeFormData.get("nickname") || "null",
+                    "Gender": employeeFormData.get("Gender"),
+                    "birth_date": employeeFormData.get("birth_date") || "null",
+                    "status": employeeFormData.get("status") || "null",
+                    "position": employeeFormData.get("position") || "null",
+                    "year_entry": employeeFormData.get("year_entry") ? parseInt(employeeFormData.get("year_entry")) : null,
+                    "salary_level": employeeFormData.get("salary_level") || "null",
+                    "phone": employeeFormData.get("phone") || "null",
+                    "pic":employeeFormData.get("pic") ? employeeFormData.get("pic").name : null,
+                    "Department": employeeFormData.get("Department") ? parseInt(employeeFormData.get("Department")) : null
+                }],
+                "PersonalInformation": [{
+                    "full_name": personalFormData.get("full_name"),
+                    "dob": personalFormData.get("dob") || "null",
+                    "eth": personalFormData.get("eth") || "null",
+                    "rel": personalFormData.get("rel") || "null",
+                    "b_vill": personalFormData.get("b_vill") || "null",
+                    "b_dist": personalFormData.get("b_dist") || "null",
+                    "b_prov": personalFormData.get("b_prov") || "null",
+                    "c_vill": personalFormData.get("c_vill") || "null",
+                    "c_dist": personalFormData.get("c_dist") || "null",
+                    "c_prov": personalFormData.get("c_prov") || "null",
+                    "gov_entry": personalFormData.get("gov_entry") || "null",
+                    "youth_date": personalFormData.get("youth_date") || "null",
+                    "women_date": personalFormData.get("women_date") || null,
+                    "union_date": personalFormData.get("union_date") || "null",
+                    "party_cand_date": personalFormData.get("party_cand_date") || "null",
+                    "full_party_date": personalFormData.get("full_party_date") || "null",
+                    "curr_party_pos": personalFormData.get("curr_party_pos") || "null",
+                    "party_apt_date": personalFormData.get("party_apt_date") || "null",
+                    "curr_gov_pos": personalFormData.get("curr_gov_pos") || "null",
+                    "gov_apt_date": personalFormData.get("gov_apt_date") || ""
+                }]
+            };
+
+            console.log("Submitting Personal Data:", JSON.stringify(jsonData, null, 2));
+
+            axios.post('http://192.168.45.52:8000/api/employee/', jsonData, {
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                alert('ບັນທຶກຂໍ້ມູນສ່ວນຕົວສຳເລັດ!');
+                personalForm.reset();
+                document.getElementById('savePersonalBtn').classList.add('hidden');
+            })
+            .catch(error => {
+                alert('ຜິດພາດ: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+
+        function toggleEducationForm() {
+            const educationSection = document.getElementById('educationSection');
+            const savePersonalBtn = document.getElementById('savePersonalBtn');
+            const backPersonalBtn = document.getElementById('backPersonalBtn');
+            const addEducationBtn = document.getElementById('addEducationBtn');
+            const saveEducationBtn = document.getElementById('saveEducationBtn');
+            
+            educationSection.classList.remove('hidden');
+            savePersonalBtn.classList.add('hidden');
+            backPersonalBtn.classList.add('hidden');
+            addEducationBtn.classList.add('hidden');
+            saveEducationBtn.classList.remove('hidden');
+            currentLevel = 2;
+        }
+
+        function goBack() {
+            const personalSection = document.getElementById('personalSection');
+            const educationSection = document.getElementById('educationSection');
+            const saveEmployeeBtn = document.getElementById('saveEmployeeBtn');
+            const savePersonalBtn = document.getElementById('savePersonalBtn');
+            const backPersonalBtn = document.getElementById('backPersonalBtn');
+            const addEducationBtn = document.getElementById('addEducationBtn');
+            const saveEducationBtn = document.getElementById('saveEducationBtn');
+
+            if (currentLevel === 2) { // From Education to Personal
+                educationSection.classList.add('hidden');
+                saveEducationBtn.classList.add('hidden');
+                savePersonalBtn.classList.remove('hidden');
+                backPersonalBtn.classList.remove('hidden');
+                addEducationBtn.classList.remove('hidden');
+                currentLevel = 1;
+            } else if (currentLevel === 1) { // From Personal to Employee
+                personalSection.classList.add('hidden');
+                savePersonalBtn.classList.add('hidden');
+                backPersonalBtn.classList.add('hidden');
+                addEducationBtn.classList.add('hidden');
+                saveEmployeeBtn.classList.remove('hidden');
+                currentLevel = 0;
+            }
+        }
+
+        function submitCombinedForm() {
+            const employeeForm = document.getElementById('employeeForm');
+            const personalForm = document.getElementById('personalInfoForm');
+            const educationForm = document.getElementById('educationForm');
+            const employeeFormData = new FormData(employeeForm);
+            const personalFormData = new FormData(personalForm);
+            const educationFormData = new FormData(educationForm);
+
+            const jsonData = {
+                "Employee_lcic": [{
+                    "lao_name": employeeFormData.get("lao_name"),
+                    "eng_name": employeeFormData.get("eng_name"),
+                    "nickname": employeeFormData.get("nickname") || "null",
+                    "Gender": employeeFormData.get("Gender"),
+                    "birth_date": employeeFormData.get("birth_date") || "null",
+                    "status": employeeFormData.get("status") || "null",
+                    "position": employeeFormData.get("position") || "null",
+                    "year_entry": employeeFormData.get("year_entry") ? parseInt(employeeFormData.get("year_entry")) : null,
+                    "salary_level": employeeFormData.get("salary_level") || "null",
+                    "phone": employeeFormData.get("phone") || "null",
+                    "pic":employeeFormData.get("pic") ? employeeFormData.get("pic").name : null,
+                    "Department": employeeFormData.get("Department") ? parseInt(employeeFormData.get("Department")) : null
+                }],
+                "PersonalInformation": [{
+                    "full_name": personalFormData.get("full_name"),
+                    "dob": personalFormData.get("dob") || "null",
+                    "eth": personalFormData.get("eth") || "null",
+                    "rel": personalFormData.get("rel") || "null",
+                    "b_vill": personalFormData.get("b_vill") || "null",
+                    "b_dist": personalFormData.get("b_dist") || "null",
+                    "b_prov": personalFormData.get("b_prov") || "null",
+                    "c_vill": personalFormData.get("c_vill") || "null",
+                    "c_dist": personalFormData.get("c_dist") || "null",
+                    "c_prov": personalFormData.get("c_prov") || "null",
+                    "gov_entry": personalFormData.get("gov_entry") || "null",
+                    "youth_date": personalFormData.get("youth_date") || "null",
+                    "women_date": personalFormData.get("women_date") || null,
+                    "union_date": personalFormData.get("union_date") || "null",
+                    "party_cand_date": personalFormData.get("party_cand_date") || "null",
+                    "full_party_date": personalFormData.get("full_party_date") || "null",
+                    "curr_party_pos": personalFormData.get("curr_party_pos") || "null",
+                    "party_apt_date": personalFormData.get("party_apt_date") || "null",
+                    "curr_gov_pos": personalFormData.get("curr_gov_pos") || "null",
+                    "gov_apt_date": personalFormData.get("gov_apt_date") || ""
+                }],
+                "education": [{
+                    "level": educationFormData.get("level")|| "null",
+                    "school": educationFormData.get("school")|| "null",
+                    "year": educationFormData.get("year") ? parseInt(educationFormData.get("year")) : null,
+                    "dom_abrd": educationFormData.get("dom_abrd")|| ""
+                }]
+            };
+
+            console.log("Submitting Combined Data:", JSON.stringify(jsonData, null, 2));
+
+            axios.post('http://192.168.45.52:8000/api/employee/', jsonData, {
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                alert('ບັນທຶກສຳເລັດ!');
+                employeeForm.reset();
+                personalForm.reset();
+                educationForm.reset();
+                document.getElementById('educationSection').classList.add('hidden');
+                document.getElementById('saveEducationBtn').classList.add('hidden');
+                document.getElementById('savePersonalBtn').classList.remove('hidden');
+                document.getElementById('backPersonalBtn').classList.remove('hidden');
+                document.getElementById('addEducationBtn').classList.remove('hidden');
+                currentLevel = 1;
+            })
+            .catch(error => {
+                alert('ຜິດພາດ: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
