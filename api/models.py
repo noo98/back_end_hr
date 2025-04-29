@@ -46,7 +46,7 @@ class Employee_lcic(models.Model):
 
     def __str__(self):
         return f"{self.emp_id} - {self.name_E} ({self.nickname})"
-      
+    
 class activity(models.Model):
     Tname = models.CharField(max_length=50)  
     Tdeteil = models.CharField(max_length=255)

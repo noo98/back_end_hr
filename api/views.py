@@ -23,6 +23,7 @@ from rest_framework.permissions import IsAuthenticated
 from .authentication import CustomJWTAuthentication  # Import custom authentication
 from .models import Status,Sidebar
 from django.http import JsonResponse
+<<<<<<< HEAD
 from django.utils import timezone
 from .models import (PersonalInformation, Education,SpecializedEducation, PoliticalTheoryEducation, ForeignLanguage, WorkExperience, 
 TrainingCourse, Award, DisciplinaryAction, FamilyMember, Evaluation)
@@ -56,6 +57,59 @@ def update_view_status(request, doc_id):
         except document_lcic.DoesNotExist:
             return JsonResponse({"success": False, "message": "ບໍ່ພົບເອກະສານ"}, status=404)
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+=======
+def get_items(request):
+    items = Item.objects.all().values('id', 'name', 'description', 'price')
+    return Response(items)
+
+class Employee_lcicView(APIView):
+
+    # authentication_classes = [CustomJWTAuthentication]  # Use custom authentication
+    # permission_classes = [IsAuthenticated]  # Require authentication
+
+    def get(self, request, emp_id=None):
+        if emp_id:
+            try:
+                employee = Employee_lcic.objects.get(emp_id=emp_id)
+                serializer = EmployeeSerializer(employee)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Employee_lcic.DoesNotExist:
+                return Response({"error": "Employee_lcic not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            employees = Employee_lcic.objects.all()
+            serializer = EmployeeSerializer(employees, many=True)
+            return Response(serializer.data)
+
+    def post(self, request):
+        serializer = EmployeeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, emp_id):
+        try:
+            employee = Employee_lcic.objects.get(emp_id=emp_id)
+        except Employee_lcic.DoesNotExist:
+            return Response({"error": f"Employee with ID {emp_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmployeeSerializer(employee, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, emp_id):
+        try:
+            # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
+            employee = Employee_lcic.objects.get(emp_id=emp_id)
+            employee.delete()  # ລຶບຂໍ້ມູນຈາກ Database
+            return Response({"message": f"employee with ID {emp_id} deleted successfully."}, status=status.HTTP_200_OK)
+        except Employee_lcic.DoesNotExist:
+            return Response({"error": f"employee with ID {emp_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+>>>>>>> a8e1bfcf16a8732bf57b150fb08d157e6964163e
 
 
 class document_lcic_ListView(APIView):
@@ -107,9 +161,11 @@ class document_lcic_UpdateView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+<<<<<<< HEAD
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+=======
+>>>>>>> a8e1bfcf16a8732bf57b150fb08d157e6964163e
              
-
 class document_lcic_deleteView(APIView):
     def delete(self, request, doc_id):
         try:
@@ -173,6 +229,7 @@ class DepartmentListView(APIView):
         departments = Department.objects.all()
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
+<<<<<<< HEAD
     
 class DepartmentList_idView(APIView):
     def get(self, request, id):
@@ -1408,6 +1465,7 @@ class docstatus(APIView):
                     {"error": "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້"},
                     status=status.HTTP_400_BAD_REQUEST)
 
+<<<<<<< HEAD
 
 class DocumentFormatSearchView(APIView):
     def get(self, request):
@@ -1638,3 +1696,8 @@ class user_empView(APIView):
 class PositionViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
+=======
+=======
+    
+>>>>>>> 9a6b161918926eb85e146bbbf084c8c402fe1d19
+>>>>>>> a8e1bfcf16a8732bf57b150fb08d157e6964163e
