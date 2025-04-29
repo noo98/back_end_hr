@@ -12,6 +12,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import update_view_status
 
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import PositionViewSet
+router = DefaultRouter()
+router.register(r'positions', PositionViewSet)
 
 urlpatterns = [
     path('users/', UserView.as_view(), name='user-list-create'),
@@ -77,5 +82,7 @@ urlpatterns = [
     # path('category/', CategoryView.as_view()),
     # path('category/<int:cat_id>/', CategoryView.as_view()),
     # path('category/search/', CategorySearchView.as_view(), name='category-search'),
+
+    path('', include(router.urls)),
 
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

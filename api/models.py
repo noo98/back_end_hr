@@ -91,22 +91,6 @@ class Document_Status(models.Model):
     class Meta:
         unique_together = ('doc_id', 'us_id')
 
-    
-class SalaryGrade(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
-    min_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    max_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    def __str__(self):
-        return f"{self.name} ({self.min_salary} - {self.max_salary})"
-    
-class Position(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.name
-
 class Province_LCIC(models.Model):
     Prov_ID = models.CharField(max_length=50, blank=True, null=True)
     Province_Name = models.CharField(max_length=255, blank=True, null=True)
@@ -269,3 +253,28 @@ class Evaluation(models.Model):
 
     def __str__(self):
         return self.emp_id
+
+# class Salary(models.Model):
+#     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE,null=True) # ຮູບແບບ
+#     pos_id = models.ForeignKey('position', on_delete=models.CASCADE,null=True) # ຕຳແໜ່ງ
+#     salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # ເງິນເດືອນ
+#     salary_level = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, null=True)  # ຂັ້ນເງິນເດືອນ
+
+class SalaryGrade(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255, unique=True)
+    min_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    max_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    def __str__(self):
+        return f"{self.name} ({self.min_salary} - {self.max_salary})"
+    
+class Position(models.Model):
+    pos_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+class Salary(models.Model):
+    sal_id = models.AutoField(primary_key=True)
+    pos_id = models.ForeignKey(Position, on_delete=models.CASCADE,null=True) # ຕຳແໜ່ງ
+    SalaryGrade = models.DecimalField (max_digits=10, decimal_places=2, null=True, blank=True)  # ເງິນເດືອນ

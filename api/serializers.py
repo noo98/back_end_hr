@@ -5,6 +5,7 @@ from .models import Department,activity,document_lcic,Document_format,Document_t
 from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,
                      ForeignLanguage,WorkExperience,TrainingCourse,Award, DisciplinaryAction, FamilyMember, Evaluation)
 from .models import Status,Sidebar,Document_Status
+from .models import Position
 import datetime
 from django.db import transaction
 from django.db.models import Max
@@ -276,3 +277,8 @@ class User_emp_Serializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Asset
 #         fields = '__all__'
+
+class PositionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Position
+        fields = '__all__'
