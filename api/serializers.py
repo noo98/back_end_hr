@@ -9,7 +9,7 @@ from .models import Position
 import datetime
 from django.db import transaction
 from django.db.models import Max
-
+from django.db import IntegrityError
 class SystemUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemUser
@@ -153,26 +153,23 @@ class DocumentLcic_AddSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
     def create(self, validated_data):
-        department = validated_data.get("department")
-        if department:
-            prefix = getattr(department, "name_e", "")[:2].upper()
-            today = datetime.date.today()
-            date_part = today.strftime("%d%m%Y")
-            last_doc = document_lcic.objects.filter(
-                department=department,
-                doc_number__startswith=f"{prefix}-"
-            ).order_by('-doc_number').first()
-            if last_doc and last_doc.doc_number:
-                try:
-                    last_number = int(last_doc.doc_number.split('-')[-1])
-                    new_number = last_number + 1
-                except ValueError:
-                    new_number = 1
-            else:
-                new_number = 1
-            validated_data["doc_number"] = f"{prefix}-{date_part}-{new_number:03d}"
-        return super().create(validated_data)
+        # ທຳງານເມື່ອບໍ່ມີ doc_number ຖືກສົ່ງມາ
+        if not validated_data.get("doc_number"):
+            department = validated_data.get("department")
+            if department:
+                prefix = getattr(department, "name_e", "")[:2].upper()
+                today = datetime.date.today()
+                date_part = today.strftime("%d%m%Y")
 
+                for i in range(1, 1000):
+                    doc_number = f"{prefix}-{date_part}-{i:03d}"
+                    if not document_lcic.objects.filter(doc_number=doc_number).exists():
+                        validated_data["doc_number"] = doc_number
+                        break
+                else:
+                    raise IntegrityError("Cannot generate unique doc_number after 999 tries.")
+
+        return super().create(validated_data)
 
 
 class activitySerializer(serializers.ModelSerializer):
@@ -199,24 +196,22 @@ class document_general_Serializer(serializers.ModelSerializer):
     class Meta:
         model = document_general
         fields = '__all__' 
-
     def create(self, validated_data):
-        department = validated_data.get("department")
-        # ສ້າງ `doc_number` ໃຫ້ອັດຕະໂນມັດ
-        if "doc_number" not in validated_data or not validated_data["doc_number"]:
-            prefix = department.name_e[:2].upper()
-            today = datetime.date.today()
-            date_part = today.strftime("%d%m%Y")
-            last_doc = document_general.objects.filter(
-                department=department,
-                doc_number__startswith=f"{prefix}"
-            ).order_by('-doc_number').first()
-            if last_doc:
-                last_number = int(last_doc.doc_number.split('-')[-1])
-                new_number = last_number + 1
-            else:
-                new_number = 1
-            validated_data["doc_number"] = f"{prefix}-{date_part}-{new_number:03d}"
+        # ທຳງານເມື່ອບໍ່ມີ doc_number ຖືກສົ່ງມາ
+        if not validated_data.get("doc_number"):
+            department = validated_data.get("department")
+            if department:
+                prefix = getattr(department, "name_e", "")[:2].upper()
+                today = datetime.date.today()
+                date_part = today.strftime("%d%m%Y")
+
+                for i in range(1, 1000):
+                    doc_number = f"{prefix}-{date_part}-{i:03d}"
+                    if not document_lcic.objects.filter(doc_number=doc_number).exists():
+                        validated_data["doc_number"] = doc_number
+                        break
+                else:
+                    raise IntegrityError("Cannot generate unique doc_number after 999 tries.")
         return super().create(validated_data)
     
 # class document_generalSerializer(serializers.ModelSerializer):
@@ -243,10 +238,13 @@ class UpdateDocSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class User_emp_Serializer(serializers.ModelSerializer):
-    Employee = EmployeeSerializer()
+    pic = serializers.SerializerMethodField()
     class Meta:
         model = SystemUser
-        fields = '__all__'
+        fields = ['us_id', 'username', 'status', 'Department', 'Employee', 'pic']
+    def get_pic(self, obj):
+        # ສົມມຸດວ່າ SystemUser ມີຄວາມສຳພັນ: obj.Employee.pic
+        return obj.Employee.pic.url if obj.Employee and obj.Employee.pic else None
 
 # class Asset_typeSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -282,3 +280,9 @@ class PositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
         fields = '__all__'
+
+class user_empSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemUser
+        fields = '__all__'
+

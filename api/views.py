@@ -57,7 +57,6 @@ def update_view_status(request, doc_id):
             return JsonResponse({"success": False, "message": "ບໍ່ພົບເອກະສານ"}, status=404)
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
-
 class document_lcic_ListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
@@ -91,7 +90,6 @@ class document_lcic_AddView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class document_lcic_UpdateView(APIView):
     def put(self, request, doc_id):
         try:
@@ -123,8 +121,7 @@ class document_lcic_deleteView(APIView):
             return Response({"error": "Document not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-           
-           
+                      
 class activityListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
@@ -166,7 +163,6 @@ class activityUpdateView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
 class DepartmentListView(APIView):
     def get(self, request):
         departments = Department.objects.all()
@@ -186,8 +182,8 @@ class DepartmentList_idView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class Department_AddView(APIView):
+
     def post(self, request):
         data = request.data
         # ກວດສອບວ່າຂໍ້ມູນເປັນ List ຫຼື Single Object
@@ -198,6 +194,7 @@ class Department_AddView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class Department_UpdateView(APIView):
     def put(self, request, id):
         # authentication_classes = [CustomJWTAuthentication]  # Use custom authentication
@@ -219,7 +216,6 @@ class Department_UpdateView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-
 class Department_DeleteView(APIView):
     def delete(self, request, id):
         try:
@@ -229,10 +225,6 @@ class Department_DeleteView(APIView):
             return Response({"message": f"Department with ID {id} deleted successfully."}, status=status.HTTP_200_OK)
         except Department.DoesNotExist:
             return Response({"error": f"Department with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#
-#
-#
 
 class Document_format_ListView(APIView):
     def get(self, request):
@@ -286,7 +278,6 @@ class Document_format_UpdateView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
              
-
 class Document_format_DeleteView(APIView):
     def delete(self, request, dmf_id):
         try:
@@ -296,11 +287,6 @@ class Document_format_DeleteView(APIView):
             return Response({"message": f"Department with ID {dmf_id} deleted successfully."}, status=status.HTTP_200_OK)
         except Document_format.DoesNotExist:
             return Response({"error": f"Department with ID {dmf_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-#
-#
-#
-
-
 
 class UserView(APIView):
 
@@ -592,7 +578,6 @@ class document_general_SearchView(APIView):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-
 class EmployeeInfoAPI(APIView):
     def get(self, request):
         users = SystemUser.objects.select_related('Department', 'Employee').all()
@@ -608,7 +593,6 @@ class EmployeeInfoAPI(APIView):
             })
 
         return Response(employee_data, status=status.HTTP_200_OK)
-
 
 class document_general_View(APIView):
     # authentication_classes = [CustomJWTAuthentication]
@@ -660,8 +644,6 @@ class document_general_View(APIView):
         except document_general.DoesNotExist:
             return Response({"error": f"document_general with ID {docg_id} not found."}, status=status.HTTP_404_NOT_FOUND)
         
-
-
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -778,259 +760,65 @@ class Employee_lcicView(APIView):
             logger.error(f"Error in post method: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    # def post(self, request):
-    #     try:
-    #         # Get JSON data from 'data' field (sent as multipart/form-data)
-    #         json_data = json.loads(request.POST.get('data', '{}'))
-    #         pic_file = request.FILES.get('pic')  # Get the uploaded file
-
-    #         # Validate that Employee_lcic exists
-    #         employee_data_list = json_data.get('Employee_lcic', [])
-    #         if not employee_data_list:
-    #             return Response({"error": "ບໍ່ມີຂໍ້ມູນ Employee_lcic"}, status=status.HTTP_400_BAD_REQUEST)
-    #         with transaction.atomic():
-    #             employee_data = employee_data_list[0]
-    #             if pic_file:
-    #                 employee_data['pic'] = pic_file  # Add the file to employee data
-    #             employee_serializer = EmployeeSerializer(data=employee_data)
-    #             employee_serializer.is_valid(raise_exception=True)
-    #             employee_instance = employee_serializer.save()
-    #             related_data_map = {
-    #                 PersonalInformationSerializer: json_data.get('PersonalInformation', []),
-    #                 FamilyMemberSerializer: json_data.get('FamilyMember', []),
-    #                 EducationSerializer: json_data.get('Education', []),
-    #                 SpecializedEducationSerializer: json_data.get('SpecializedEducation', []),
-    #                 PoliticalTheoryEducationSerializer: json_data.get('PoliticalTheoryEducation', []),
-    #                 ForeignLanguageSerializer: json_data.get('ForeignLanguage', []),
-    #                 WorkExperienceSerializer: json_data.get('WorkExperience', []),
-    #                 TrainingCourseSerializer: json_data.get('TrainingCourse', []),
-    #                 AwardSerializer: json_data.get('Award', []),
-    #                 DisciplinaryActionSerializer: json_data.get('DisciplinaryAction', [])
-    #             }
-    #             for serializer_class, dataset in related_data_map.items():
-    #                 self.save_related_data(serializer_class, dataset, employee_instance.emp_id)
-    #             evaluation_list = json_data.get('Evaluation', [])
-    #             if evaluation_list:
-    #                 evaluation_data = evaluation_list[0]
-    #                 evaluation_data["emp_id"] = employee_instance.emp_id
-    #                 evaluation_serializer = EvaluationSerializer(data=evaluation_data)
-    #                 evaluation_serializer.is_valid(raise_exception=True)
-    #                 evaluation_serializer.save()
-    #         return Response({
-    #             "success": True,
-    #             "message": "ບັນທຶກສຳເລັດ",
-    #             "emp_id": employee_instance.emp_id,
-    #             "name": employee_instance.lao_name
-    #         }, status=status.HTTP_201_CREATED)
-    #     except Exception as e:
-    #         logger.error(f"Error in post method: {e}")
-    #         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-    # def patch(self, request, emp_id: int):
-
-    #     dataset = request.data
-
-    #     # ✅ Normalize input to a list for consistent processing
-    #     if isinstance(dataset, dict):
-    #         dataset = [dataset]
-    #     elif not isinstance(dataset, list):
-    #         return Response(
-    #             {"error": "Expected a list or a single data object."},
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     try:
-    #         with transaction.atomic():
-    #             # ✅ Retrieve employee instance
-    #             emp_instance = get_object_or_404(Employee_lcic, emp_id=emp_id)
-
-    #             for item in dataset:
-    #                 # ✅ Extract and validate employee data
-    #                 employee_json = item.get('employee')
-    #                 related_data_keys = [
-    #                     'personal_information', 'education', 'specialized_education',
-    #                     'political_theory_education', 'foreign_languages', 'work_experiences',
-    #                     'training_courses', 'awards', 'disciplinary_actions', 'family_members',
-    #                     'evaluation'
-    #                 ]
-
-    #                 # Require either employee data or related data
-    #                 if employee_json is None and not any(key in item for key in related_data_keys):
-    #                     return Response(
-    #                         {"error": "Missing 'employee' data or related data."},
-    #                         status=status.HTTP_400_BAD_REQUEST
-    #                     )
-
-    #                 # ✅ Parse employee data (string or dict)
-    #                 if isinstance(employee_json, str):
-    #                     try:
-    #                         employee_data = json.loads(employee_json)
-    #                     except json.JSONDecodeError:
-    #                         return Response(
-    #                             {"error": "Invalid JSON format in 'employee' data."},
-    #                             status=status.HTTP_400_BAD_REQUEST
-    #                         )
-    #                 elif isinstance(employee_json, dict):
-    #                     employee_data = employee_json
-    #                 else:
-    #                     employee_data = {}
-
-    #                 # ✅ Handle image uploads
-    #                 if 'pic' in request.FILES:
-    #                     pic = request.FILES['pic']
-    #                     if pic.size > 5 * 1024 * 1024:
-    #                         return Response(
-    #                             {"error": "Image file too large (max 5MB)."},
-    #                             status=status.HTTP_400_BAD_REQUEST
-    #                         )
-    #                     employee_data['pic'] = pic
-    #                 elif employee_data.get('pic') in ['', None, 'null', u'null']:
-    #                     if emp_instance.pic:
-    #                         emp_instance.pic.delete(save=False)
-    #                     employee_data['pic'] = None
-    #                 else:
-    #                     employee_data.pop('pic', None)
-
-    #                 # ✅ Update employee data (if provided)
-    #                 if employee_data:
-    #                     emp_serializer = EmployeeSerializer(
-    #                         emp_instance, data=employee_data, partial=True
-    #                     )
-    #                     emp_serializer.is_valid(raise_exception=True)
-    #                     emp_serializer.save()
-
-    #                 # ✅ Extract related data (allow missing fields)
-    #                 related_data = {
-    #                     'personal_information': item.get('personal_information', []),
-    #                     'education': item.get('education', []),
-    #                     'specialized_education': item.get('specialized_education', []),
-    #                     'political_theory_education': item.get('political_theory_education', []),
-    #                     'foreign_languages': item.get('foreign_languages', []),
-    #                     'work_experiences': item.get('work_experiences', []),
-    #                     'training_courses': item.get('training_courses', []),
-    #                     'awards': item.get('awards', []),
-    #                     'disciplinary_actions': item.get('disciplinary_actions', []),
-    #                     'family_members': item.get('family_members', []),
-    #                     'evaluation': item.get('evaluation', [])
-    #                 }
-
-    #                 # ✅ Function to update related data
-    #                 def update_related_data(model_class, serializer_class, data_list):
-    #                     if not data_list:  # Skip if no data provided
-    #                         return
-    #                     existing_objs = {obj.id: obj for obj in model_class.objects.filter(emp_id=emp_id)}
-    #                     sent_ids = []
-
-    #                     for entry in data_list:
-    #                         entry['emp_id'] = emp_id
-    #                         obj_id = entry.get('id')
-    #                         if obj_id and obj_id in existing_objs:
-    #                             serializer = serializer_class(existing_objs[obj_id], data=entry, partial=True)
-    #                         else:
-    #                             serializer = serializer_class(data=entry)
-    #                         serializer.is_valid(raise_exception=True)
-    #                         instance = serializer.save()
-    #                         sent_ids.append(instance.id)
-
-    #                     # Delete only records not included in the provided data
-    #                     model_class.objects.filter(emp_id=emp_id).exclude(id__in=sent_ids).delete()
-
-    #                 # ✅ Update related tables (only if data is provided)
-    #                 update_related_data(PersonalInformation, PersonalInformationSerializer, related_data['personal_information'])
-    #                 update_related_data(Education, EducationSerializer, related_data['education'])
-    #                 update_related_data(SpecializedEducation, SpecializedEducationSerializer, related_data['specialized_education'])
-    #                 update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, related_data['political_theory_education'])
-    #                 update_related_data(ForeignLanguage, ForeignLanguageSerializer, related_data['foreign_languages'])
-    #                 update_related_data(WorkExperience, WorkExperienceSerializer, related_data['work_experiences'])
-    #                 update_related_data(TrainingCourse, TrainingCourseSerializer, related_data['training_courses'])
-    #                 update_related_data(Award, AwardSerializer, related_data['awards'])
-    #                 update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, related_data['disciplinary_actions'])
-    #                 update_related_data(FamilyMember, FamilyMemberSerializer, related_data['family_members'])
-    #                 update_related_data(Evaluation, EvaluationSerializer, related_data['evaluation'])
-
-    #             return Response(
-    #                 {"message": "ອັບເດດສຳເລັດ", "emp_id": emp_id},
-    #                 status=status.HTTP_200_OK
-    #             )
-
-    #     except ValidationError as e:
-    #         return Response(
-    #             {"error": e.detail},
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     except Exception as e:
-    #         return Response(
-    #             {"error": f"Unexpected error: {str(e)}"},
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
     def patch(self, request, emp_id: int):
-            dataset = request.data
-
-            # ถ้า dataset เป็น dict เดี่ยว ให้แปลงเป็น list
-            if isinstance(dataset, dict):
-                dataset = [dataset]
-            elif not isinstance(dataset, list):
-                return Response(
-                    {"error": "Expected a list or a single data object."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            logger.debug(f"Received PATCH request for emp_id: {emp_id}")
 
             try:
+                # รองรับทั้ง JSON และ FormData
+                if request.content_type.startswith('multipart/form-data'):
+                    raw_data = request.POST.get('data', '{}')
+                    try:
+                        dataset = json.loads(raw_data)
+                    except json.JSONDecodeError:
+                        logger.error("Invalid JSON format in 'data' field")
+                        return Response({"error": "Invalid JSON format in 'data' field."}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    dataset = request.data
+
+                # ถ้า dataset เป็น dict เดี่ยว ให้แปลงเป็น list
+                if isinstance(dataset, dict):
+                    dataset = [dataset]
+                elif not isinstance(dataset, list):
+                    logger.error("Dataset is neither a dict nor a list")
+                    return Response({"error": "Expected a list or a single data object."}, status=status.HTTP_400_BAD_REQUEST)
+
                 with transaction.atomic():
                     # หา employee object
                     emp_instance = get_object_or_404(Employee_lcic, emp_id=emp_id)
 
                     for item in dataset:
                         # ดึงข้อมูล employee หลัก
-                        employee_json = item.get('employee')
-
-                        # ถ้าไม่มีข้อมูลอะไรเลย
-                        if employee_json is None and not any(
-                            key in item for key in [
-                                'personal_information', 'education', 'specialized_education',
-                                'political_theory_education', 'foreign_languages', 'work_experiences',
-                                'training_courses', 'awards', 'disciplinary_actions', 'family_members', 'evaluation'
-                            ]
-                        ):
-                            return Response(
-                                {"error": "Missing 'employee' data or related data."},
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
+                        employee_json = item.get('employee', {})
 
                         # แปลง employee_json ถ้าเป็น string
                         if isinstance(employee_json, str):
                             try:
                                 employee_data = json.loads(employee_json)
                             except json.JSONDecodeError:
-                                return Response(
-                                    {"error": "Invalid JSON format in 'employee' data."},
-                                    status=status.HTTP_400_BAD_REQUEST
-                                )
+                                logger.error("Invalid JSON format in 'employee' data")
+                                return Response({"error": "Invalid JSON format in 'employee' data."}, status=status.HTTP_400_BAD_REQUEST)
                         elif isinstance(employee_json, dict):
                             employee_data = employee_json
                         else:
                             employee_data = {}
 
                         # อัปเดตรูป (pic)
+                        pic_updated = False
                         if 'pic' in request.FILES:
                             pic = request.FILES['pic']
                             if pic.size > 5 * 1024 * 1024:  # จำกัดขนาดไฟล์
-                                return Response(
-                                    {"error": "Image file too large (max 5MB)."},
-                                    status=status.HTTP_400_BAD_REQUEST
-                                )
-                            employee_data['pic'] = pic
-                    else:
-                        if 'pic' in employee_data:
-                                    employee_data.pop('pic', None)  # ลบทิ้งถ้าไม่มีใหม่
+                                logger.error("Image file too large")
+                                return Response({"error": "Image file too large (max 5MB)."}, status=status.HTTP_400_BAD_REQUEST)
+                            emp_instance.pic.save(pic.name, pic)
+                            pic_updated = True
+                            logger.info(f"Saved new image: {pic.name}")
 
                         # เซฟข้อมูล employee หลัก
                         if employee_data:
                             emp_serializer = EmployeeSerializer(emp_instance, data=employee_data, partial=True)
                             emp_serializer.is_valid(raise_exception=True)
                             emp_serializer.save()
+                            logger.info(f"Updated employee data for emp_id: {emp_id}")
 
                         # ดึงข้อมูลตารางย่อย
                         related_data = {
@@ -1046,52 +834,60 @@ class Employee_lcicView(APIView):
                             'family_members': item.get('family_members', []),
                             'evaluation': item.get('evaluation', [])
                         }
+                        logger.debug(f"Related data: {related_data}")
 
                         # ฟังก์ชันอัปเดตข้อมูลย่อย
-                        def update_related_data(model_class, serializer_class, data_list):
-                            if not data_list:
+                        def update_related_data(model_class, serializer_class, data_list, model_name):
+                            if not data_list or not isinstance(data_list, list):
+                                logger.debug(f"No data to update for {model_name}")
                                 return
-                            existing_objs = {obj.id: obj for obj in model_class.objects.filter(emp_id=emp_id)}
-                            sent_ids = []
+                            try:
+                                existing_objs = {obj.id: obj for obj in model_class.objects.filter(emp_id=emp_id)}
+                                sent_ids = []
 
-                            for entry in data_list:
-                                entry['emp_id'] = emp_id  # bind emp_id
-                                obj_id = entry.get('id')
-                                if obj_id and obj_id in existing_objs:
-                                    serializer = serializer_class(existing_objs[obj_id], data=entry, partial=True)
-                                else:
-                                    serializer = serializer_class(data=entry)
-                                serializer.is_valid(raise_exception=True)
-                                instance = serializer.save()
-                                sent_ids.append(instance.id)
+                                for entry in data_list:
+                                    entry['emp_id'] = emp_id
+                                    obj_id = entry.get('id')
+                                    if obj_id and obj_id in existing_objs:
+                                        serializer = serializer_class(existing_objs[obj_id], data=entry, partial=True)
+                                    else:
+                                        serializer = serializer_class(data=entry)
+                                    serializer.is_valid(raise_exception=True)
+                                    instance = serializer.save()
+                                    sent_ids.append(instance.id)
+                                    logger.debug(f"Saved {model_name} instance: {instance.id}")
 
-                            # ลบ record ที่ไม่มีในรอบนี้
-                            model_class.objects.filter(emp_id=emp_id).exclude(id__in=sent_ids).delete()
+                                # ลบ record ที่ไม่ได้ส่งมา
+                                deleted_count = model_class.objects.filter(emp_id=emp_id).exclude(id__in=sent_ids).delete()[0]
+                                logger.debug(f"Deleted {deleted_count} old {model_name} records")
+                            except Exception as e:
+                                logger.error(f"Error updating {model_name}: {str(e)}")
+                                raise
 
                         # อัปเดตข้อมูลย่อย
-                        update_related_data(PersonalInformation, PersonalInformationSerializer, related_data['personal_information'])
-                        update_related_data(Education, EducationSerializer, related_data['education'])
-                        update_related_data(SpecializedEducation, SpecializedEducationSerializer, related_data['specialized_education'])
-                        update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, related_data['political_theory_education'])
-                        update_related_data(ForeignLanguage, ForeignLanguageSerializer, related_data['foreign_languages'])
-                        update_related_data(WorkExperience, WorkExperienceSerializer, related_data['work_experiences'])
-                        update_related_data(TrainingCourse, TrainingCourseSerializer, related_data['training_courses'])
-                        update_related_data(Award, AwardSerializer, related_data['awards'])
-                        update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, related_data['disciplinary_actions'])
-                        update_related_data(FamilyMember, FamilyMemberSerializer, related_data['family_members'])
-                        update_related_data(Evaluation, EvaluationSerializer, related_data['evaluation'])
+                        update_related_data(PersonalInformation, PersonalInformationSerializer, related_data['personal_information'], 'PersonalInformation')
+                        update_related_data(Education, EducationSerializer, related_data['education'], 'Education')
+                        update_related_data(SpecializedEducation, SpecializedEducationSerializer, related_data['specialized_education'], 'SpecializedEducation')
+                        update_related_data(PoliticalTheoryEducation, PoliticalTheoryEducationSerializer, related_data['political_theory_education'], 'PoliticalTheoryEducation')
+                        update_related_data(ForeignLanguage, ForeignLanguageSerializer, related_data['foreign_languages'], 'ForeignLanguage')
+                        update_related_data(WorkExperience, WorkExperienceSerializer, related_data['work_experiences'], 'WorkExperience')
+                        update_related_data(TrainingCourse, TrainingCourseSerializer, related_data['training_courses'], 'TrainingCourse')
+                        update_related_data(Award, AwardSerializer, related_data['awards'], 'Award')
+                        update_related_data(DisciplinaryAction, DisciplinaryActionSerializer, related_data['disciplinary_actions'], 'DisciplinaryAction')
+                        update_related_data(FamilyMember, FamilyMemberSerializer, related_data['family_members'], 'FamilyMember')
+                        update_related_data(Evaluation, EvaluationSerializer, related_data['evaluation'], 'Evaluation')
 
                     return Response(
-                        {"message": "ອັບເດດສຳເລັດ", "emp_id": emp_id},
+                        {"message": "ອັບເດດ ສຳເລັດ", "emp_id": emp_id},
                         status=status.HTTP_200_OK
                     )
 
             except ValidationError as e:
+                logger.error(f"Validation error: {e.detail}")
                 return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
-
             except Exception as e:
+                logger.error(f"Unexpected error: {str(e)}")
                 return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
 
     def put(self, request, emp_id: int):
             dataset = request.data
@@ -1190,17 +986,17 @@ class Employee_lcicView(APIView):
                         update_related_data(FamilyMember, FamilyMemberSerializer, family_data)
                         update_related_data(Evaluation, EvaluationSerializer, evaluation_data)
 
-                        # # ✅ อัปเดตการประเมิน
-                        # if evaluation_data:
-                        #     evaluation_data['emp_id'] = emp_id
-                        #     eval_id = evaluation_data.get('id')
-                        #     if eval_id:
-                        #         eval_instance = get_object_or_404(Evaluation, id=eval_id, emp_id=emp_id)
-                        #         eval_serializer = EvaluationSerializer(eval_instance, data=evaluation_data, partial=True)
-                        #     else:
-                        #         eval_serializer = EvaluationSerializer(data=evaluation_data)
-                        #     eval_serializer.is_valid(raise_exception=True)
-                        #     eval_serializer.save()
+                        # ✅ อัปเดตการประเมิน
+                        if evaluation_data:
+                            evaluation_data['emp_id'] = emp_id
+                            eval_id = evaluation_data.get('id')
+                            if eval_id:
+                                eval_instance = get_object_or_404(Evaluation, id=eval_id, emp_id=emp_id)
+                                eval_serializer = EvaluationSerializer(eval_instance, data=evaluation_data, partial=True)
+                            else:
+                                eval_serializer = EvaluationSerializer(data=evaluation_data)
+                            eval_serializer.is_valid(raise_exception=True)
+                            eval_serializer.save()
 
                 return Response({"message": "ອັບເດດສຳເລັດ", "emp_id": emp_id}, status=status.HTTP_200_OK)
 
@@ -1263,7 +1059,6 @@ class Employee_lcicView(APIView):
 
     #     except Exception as e:
     #         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class permission_lcic_View(APIView):
     def get(self, request, sta_id=None):
@@ -1333,7 +1128,6 @@ class sidebar_View(APIView):
             sid_id = Sidebar.objects.all()
             serializer = SidebarSerializer(sid_id, many=True)
             return Response(serializer.data)
-
 
 from .serializers import UpdateDocSerializer
 from django.shortcuts import get_object_or_404
@@ -1407,7 +1201,6 @@ class docstatus(APIView):
                     {"error": "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້"},
                     status=status.HTTP_400_BAD_REQUEST)
 
-
 class DocumentFormatSearchView(APIView):
     def get(self, request):
         department_name = request.query_params.get('department')
@@ -1426,7 +1219,6 @@ class DocumentFormatSearchView(APIView):
         serializer = DocumentFormatSerializer(documents, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 class AutoUpdateStatusDocAPIView(APIView):
     def post(self, request, format=None):
         today = timezone.now().date()
@@ -1438,8 +1230,6 @@ class AutoUpdateStatusDocAPIView(APIView):
             "message": f"Updated {updated_count} documents (status 1 ➡️ 0)",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
-
-
 
 from .serializers import User_emp_Serializer
 class user_empView(APIView):
@@ -1626,7 +1416,7 @@ class user_empView(APIView):
 
 #         if categories.exists():
 #             serializer = categorySerializer(categories, many=True)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
+#             return Response(serializer.data, status=status.HTTP_200_OK)ຫຫ
 
 #         return Response(
 #             {"message": "No categories found matching your search query."},
@@ -1637,3 +1427,4 @@ class user_empView(APIView):
 class PositionViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
+

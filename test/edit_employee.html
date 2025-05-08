@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ແກ້ໄຂຂໍ້ມູນພະນັກງານ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans Lao', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(to right, #e0f2f1, #b2dfdb);
+            color: #333;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        h2 {
+            text-align: center;
+            color: #1a3c34;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 700;
+            color: #1a3c34;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 3px;
+        }
+        .image-preview {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .image-preview img {
+            max-width: 150px;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .submit-btn:hover {
+            background: linear-gradient(to bottom, #388E3C, #2E7D32);
+        }
+        .submit-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #d32f2f;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .success {
+            color: #388E3C;
+            text-align: center;
+            margin-top: 10px;
+        }
+        @media screen and (max-width: 768px) {
+            .form-container {
+                padding: 20px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            input, select {
+                font-size: 14px;
+            }
+            .image-preview img {
+                max-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>ແກ້ໄຂຂໍ້ມູນພະນັກງານ</h2>
+        <form id="employeeForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="emp_id">ລະຫັດພະນັກງານ</label>
+                <input type="text" id="emp_id" name="emp_id" readonly>
+            </div>
+            <div class="form-group">
+                <label for="lao_name">ຊື່ລາວ</label>
+                <input type="text" id="lao_name" name="lao_name" required>
+            </div>
+            <div class="form-group">
+                <label for="eng_name">ຊື່ອັງກິດ</label>
+                <input type="text" id="eng_name" name="eng_name" required>
+            </div>
+            <div class="form-group">
+                <label for="nickname">ຊື່ຫຼິ້ນ</label>
+                <input type="text" id="nickname" name="nickname">
+            </div>
+            <div class="form-group">
+                <label for="Gender">ເພດ</label>
+                <select id="Gender" name="Gender" required>
+                    <option value="ຊາຍ">ຊາຍ</option>
+                    <option value="ຍິງ">ຍິງ</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="birth_date">ວັນເດືອນປີເກີດ</label>
+                <input type="date" id="birth_date" name="birth_date" required>
+            </div>
+            <div class="form-group">
+                <label for="status">ສະຖານະ</label>
+                <input type="text" id="status" name="status" required>
+            </div>
+            <div class="form-group">
+                <label for="position">ຕຳແໜ່ງ</label>
+                <input type="text" id="position" name="position" required>
+            </div>
+            <div class="form-group">
+                <label for="salary_level">ລະດັບເງິນເດືອນ</label>
+                <input type="text" id="salary_level" name="salary_level" required>
+            </div>
+            <div class="form-group">
+                <label for="year_entry">ວັນທີ່ເຂົ້າທຳງານ</label>
+                <input type="date" id="year_entry" name="year_entry" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">ເບີໂທ</label>
+                <input type="text" id="phone" name="phone" required>
+            </div>
+            <div class="form-group">
+                <label for="pic">ຮູບພາບ</label>
+                <input type="file" id="pic" name="pic" accept="image/jpeg,image/png">
+                <div class="image-preview" id="imagePreview">
+                    <img id="currentImage" src="" alt="Current Profile Image" style="display: none;">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="Department">ພະແນກ</label>
+                <input type="number" id="Department" name="Department" required>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">ບັນທຶກການປ່ຽນແປງ</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // Function to get query parameter
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Function to check if an image URL is accessible
+        async function checkImageUrl(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok;
+            } catch {
+                return false;
+            }
+        }
+
+        // Function to fetch employee data and populate form
+        async function loadEmployeeData() {
+            const empId = getQueryParam('emp_id');
+            const messageDiv = document.getElementById('message');
+            if (!empId) {
+                messageDiv.innerHTML = '<p class="error">ບໍ່ພົບລະຫັດພະນັກງານ</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://192.168.45.52:8000/api/employee/${empId}/`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Fetched employee data:', data);
+
+                const employee = data[0]?.employee;
+                if (!employee) {
+                    messageDiv.innerHTML = '<p class="error">ບໍ່ພົບຂໍ້ມູນພະນັກງານ</p>';
+                    return;
+                }
+
+                document.getElementById('emp_id').value = employee.emp_id || '';
+                document.getElementById('lao_name').value = employee.lao_name || '';
+                document.getElementById('eng_name').value = employee.eng_name || '';
+                document.getElementById('nickname').value = employee.nickname || '';
+                document.getElementById('Gender').value = employee.Gender || 'ຊາຍ';
+                document.getElementById('birth_date').value = employee.birth_date || '';
+                document.getElementById('status').value = employee.status || '';
+                document.getElementById('position').value = employee.position || '';
+                document.getElementById('salary_level').value = employee.salary_level || '';
+                document.getElementById('year_entry').value = employee.year_entry || '';
+                document.getElementById('phone').value = employee.phone || '';
+                document.getElementById('Department').value = employee.Department || '';
+
+                // Display current profile image
+                const currentImage = document.getElementById('currentImage');
+                if (employee.pic) {
+                    const imageUrl = `http://192.168.45.52:8000${employee.pic}?t=${new Date().getTime()}`;
+                    const imageExists = await checkImageUrl(imageUrl);
+                    if (imageExists) {
+                        currentImage.src = imageUrl;
+                        currentImage.style.display = 'block';
+                    } else {
+                        console.warn(`Image not found: ${imageUrl}`);
+                        currentImage.style.display = 'none';
+                        messageDiv.innerHTML = '<p class="error">ບໍ່ສາມາດໂຫລດຮູບພາບປັດຈຸບັນໄດ້</p>';
+                    }
+                } else {
+                    currentImage.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+                messageDiv.innerHTML = 
+                    '<p class="error">ມີຂໍ້ຜິດພາດໃນການໂຫລດຂໍ້ມູນ: ' + error.message + '</p>';
+            }
+        }
+
+        // Validate and preview new image before upload
+        document.getElementById('pic').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const currentImage = document.getElementById('currentImage');
+            const messageDiv = document.getElementById('message');
+
+            if (file) {
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/png'];
+                if (!validTypes.includes(file.type)) {
+                    messageDiv.innerHTML = '<p class="error">ກະລຸນາເລືອກໄຟລ໌ JPEG ຫຼື PNG ເທົ່ານັ້ນ</p>';
+                    e.target.value = '';
+                    currentImage.style.display = 'none';
+                    return;
+                }
+
+                // Validate file size (max 1MB)
+                const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+                if (file.size > maxSize) {
+                    messageDiv.innerHTML = '<p class="error">ຂະໜາດໄຟລ໌ຕ້ອງບໍ່ເກີນ 1MB</p>';
+                    e.target.value = '';
+                    currentImage.style.display = 'none';
+                    return;
+                }
+
+                // Preview the image
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    currentImage.src = event.target.result;
+                    currentImage.style.display = 'block';
+                    messageDiv.innerHTML = '';
+                };
+                reader.onerror = function () {
+                    messageDiv.innerHTML = '<p class="error">ມີຂໍ້ຜິດພາດໃນການອ່ານໄຟລ໌</p>';
+                    e.target.value = '';
+                    currentImage.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                currentImage.style.display = 'none';
+                messageDiv.innerHTML = '';
+            }
+        });
+
+        // Function to attempt image upload
+        async function uploadEmployeeData(empId, formData, hasImage, retryCount = 0) {
+            const maxRetries = 2;
+            try {
+                const response = await fetch(`http://192.168.45.52:8000/api/employee/${empId}/`, {
+                    method: 'PATCH',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const responseData = await response.json();
+                console.log('Server response:', responseData);
+
+                if (response.ok) {
+                    // Check if image was expected and updated
+                    let imageUpdated = !hasImage;
+                    if (hasImage && responseData.employee?.pic) {
+                        const imageUrl = `http://192.168.45.52:8000${responseData.employee.pic}?t=${new Date().getTime()}`;
+                        imageUpdated = await checkImageUrl(imageUrl);
+                        if (!imageUpdated) {
+                            console.warn(`Uploaded image not found: ${imageUrl}`);
+                        }
+                    }
+                    return { success: true, data: responseData, imageUpdated };
+                } else {
+                    if (retryCount < maxRetries && response.status >= 500) {
+                        console.log(`Retrying upload (attempt ${retryCount + 2})...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return uploadEmployeeData(empId, formData, hasImage, retryCount + 1);
+                    }
+                    return { success: false, error: responseData };
+                }
+            } catch (error) {
+                if (retryCount < maxRetries) {
+                    console.log(`Retrying upload (attempt ${retryCount + 2})...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return uploadEmployeeData(empId, formData, hasImage, retryCount + 1);
+                }
+                return { success: false, error: { message: error.message } };
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('employeeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            const empId = document.getElementById('emp_id').value;
+            const picInput = document.getElementById('pic');
+
+            // Disable submit button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'ກຳລັງບັນທຶກ...';
+
+            const formData = new FormData();
+
+            // Collect form data as a single employee object
+            const employeeData = {
+                emp_id: empId,
+                lao_name: document.getElementById('lao_name').value,
+                eng_name: document.getElementById('eng_name').value,
+                nickname: document.getElementById('nickname').value || null,
+                Gender: document.getElementById('Gender').value,
+                birth_date: document.getElementById('birth_date').value,
+                status: document.getElementById('status').value,
+                position: document.getElementById('position').value,
+                salary_level: document.getElementById('salary_level').value,
+                year_entry: document.getElementById('year_entry').value,
+                phone: document.getElementById('phone').value,
+                Department: parseInt(document.getElementById('Department').value)
+            };
+
+            // Append employee data as a JSON string
+            formData.append('employee', JSON.stringify(employeeData));
+
+            // Append image file if selected
+            let hasImage = false;
+            if (picInput.files.length > 0) {
+                const file = picInput.files[0];
+                formData.append('pic', file);
+                hasImage = true;
+                console.log('Image selected:', {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+            } else {
+                console.log('No image selected');
+            }
+
+            // Log FormData contents for debugging
+            for (let [key, value] of formData.entries()) {
+                console.log(`FormData: ${key}=${typeof value === 'object' ? value.name : value}`);
+            }
+
+            const result = await uploadEmployeeData(empId, formData, hasImage);
+
+            if (result.success) {
+                const { data, imageUpdated } = result;
+                if (hasImage && !imageUpdated) {
+                    messageDiv.innerHTML = 
+                        '<p class="error">ອັບເດດຂໍ້ມູນພະນັກງານສຳເລັດ ແຕ່ຮູບພາບບໍ່ໄດ້ອັບໂຫລດ (ບໍ່ພົບໄຟລ໌ຢູ່ຝ່າຍເຊີບເວີ)</p>';
+                } else {
+                    messageDiv.innerHTML = 
+                        '<p class="success">ອັບເດດຂໍ້ມູນພະນັກງານ' + (hasImage ? 'ແລະຮູບພາບ' : '') + 'ສຳເລັດ!</p>';
+                }
+                // Reset file input and image preview
+                picInput.value = '';
+                document.getElementById('currentImage').style.display = 'none';
+                // Redirect to index.html after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/test/index.html';
+                }, 2000);
+            } else {
+                console.error('Error response:', result.error);
+                let errorMessage = result.error.message || JSON.stringify(result.error);
+                if (result.error.errors?.pic) {
+                    errorMessage = `ຂໍ້ຜິດພາດກ່ຽວກັບຮູບພາບ: ${result.error.errors.pic}`;
+                } else if (result.error.detail) {
+                    errorMessage = result.error.detail;
+                }
+                messageDiv.innerHTML = `<p class="error">ມີຂໍ້ຜິດພາດ: ${errorMessage}</p>`;
+            }
+
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'ບັນທຶກການປ່ຽນແປງ';
+        });
+
+        // Load employee data when the page loads
+        loadEmployeeData();
+    </script>
+</body>
+</html>
