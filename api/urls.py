@@ -11,13 +11,24 @@ from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusD
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import update_view_status
-
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import PositionViewSet
+from .views import (
+    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,
+    SubsidyYearViewSet, FuelSubsidyViewSet, AnnualPerformanceGrantViewSet,
+    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet, OvertimeWorkViewSet
+)
 router = DefaultRouter()
 router.register(r'positions', PositionViewSet)
-
+router.register(r'sal', SalaryViewSet)
+router.register(r'sp', SubsidyPositionViewSet)
+router.register(r'sy', SubsidyYearViewSet)
+router.register(r'fs', FuelSubsidyViewSet)
+router.register(r'apg', AnnualPerformanceGrantViewSet)
+router.register(r'sdg', SpecialDayGrantViewSet)
+router.register(r'mps', MobilePhoneSubsidyViewSet)
+router.register(r'ot', OvertimeWorkViewSet)
 
 urlpatterns = [
     path('users/', UserView.as_view(), name='user-list-create'),

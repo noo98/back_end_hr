@@ -17,6 +17,7 @@ class SystemUser(models.Model):
     Department = models.ForeignKey('Department', on_delete=models.CASCADE)
     Employee =  models.ForeignKey('Employee_lcic', on_delete=models.CASCADE) # ພະແນກ
     status = models.IntegerField()
+    pic = models.ImageField(upload_to='user_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
 
     def __str__(self):
         return self.username
@@ -38,7 +39,7 @@ class Employee_lcic(models.Model):
     birth_date = models.CharField(max_length=100, blank=True, null=True) # ວັນເດືອນປີເກີດ
     status = models.CharField(max_length=20)  # ສະຖານະພາບ (ເຊັ່ນ ໂສດ, ແຕ່ງງານ)
     Department = models.ForeignKey('Department', on_delete=models.CASCADE)
-    position = models.CharField(max_length=100)  # ຕຳແໜ່ງ
+    pos_id = models.ForeignKey('Position', on_delete=models.CASCADE,null=True,blank=True) # ຕຳແໜ່ງ
     year_entry = models.CharField(null=True)  # ປີເຂົ້າເຮັດວຽກ
     salary_level = models.CharField(max_length=100)# ຂັ້ນເງິນເດືອນ
     phone = models.CharField(max_length=20)  # ເບີໂທ
@@ -260,7 +261,7 @@ class Evaluation(models.Model):
 #     salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # ເງິນເດືອນ
 #     salary_level = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, null=True)  # ຂັ້ນເງິນເດືອນ
 
-class SalaryGrade(models.Model):
+class Salary_Grade(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
     min_salary = models.DecimalField(max_digits=10, decimal_places=2)
@@ -272,9 +273,62 @@ class Position(models.Model):
     pos_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
 
-    def __str__(self):
-        return self.name
 class Salary(models.Model):
     sal_id = models.AutoField(primary_key=True)
     pos_id = models.ForeignKey(Position, on_delete=models.CASCADE,null=True) # ຕຳແໜ່ງ
     SalaryGrade = models.DecimalField (max_digits=10, decimal_places=2, null=True, blank=True)  # ເງິນເດືອນ
+
+
+class SubsidyPosition(models.Model):
+    sp_id = models.AutoField(primary_key=True)
+    position = models.ForeignKey(Position, on_delete=models.CASCADE)
+    grant = models.BigIntegerField()
+
+class SubsidyYear(models.Model):
+    sy_id = models.AutoField(primary_key=True)
+    year_range = models.CharField(max_length=50,null=True, blank=True)  # e.g. "1-5", "6-15"
+    y_subsidy = models.BigIntegerField(null=True, blank=True)
+
+
+class FuelSubsidy(models.Model):
+    fs_id = models.AutoField(primary_key=True)
+    pos_id = models.ForeignKey(Position, on_delete=models.CASCADE)
+    fuel_subsidy = models.IntegerField(null=True, blank=True)
+    fuel_price = models.BigIntegerField(null=True, blank=True)
+
+class AnnualPerformanceGrant(models.Model):
+    APG_id = models.AutoField(primary_key=True)
+    level = models.CharField(max_length=50, null=True, blank=True)  # ລະດັບ
+    calculate = models.FloatField()
+
+class SpecialDayGrant(models.Model):
+    sdg_id = models.AutoField(primary_key=True)
+    occasion_name = models.CharField(max_length=255)
+
+
+class MobilePhoneSubsidy(models.Model):
+    mb = models.AutoField(primary_key=True)
+    position = models.ForeignKey(Position, on_delete=models.CASCADE)
+    grant = models.BigIntegerField()
+
+class OvertimeWork(models.Model):
+    ot_id = models.AutoField(primary_key=True)
+    position = models.ForeignKey(Position, on_delete=models.CASCADE)
+    grant = models.BigIntegerField(null=True, blank=True)  # ຍອມໃຫ້ປ່ຽນແປງໄດ້ ແລະໃສ່ຄ່າວ່າງໄດ້
+
+class MonthlyPayment(models.Model):
+    mp_id = models.AutoField(primary_key=True)
+    emp = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)
+    date = models.DateField()
+    salary = models.ForeignKey(Salary, on_delete=models.SET_NULL, null=True, blank=True)
+    fuel_subsidy = models.ForeignKey(FuelSubsidy, on_delete=models.SET_NULL, null=True, blank=True)
+    overtime = models.ForeignKey(OvertimeWork, on_delete=models.SET_NULL, null=True, blank=True)
+    ot_time = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    position_subsidy = models.ForeignKey(SubsidyPosition, on_delete=models.SET_NULL, null=True, blank=True)
+    subsidy_year = models.ForeignKey(SubsidyYear, on_delete=models.SET_NULL, null=True, blank=True)
+    fuel_payment = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    salary_payment = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    total_payment = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return f"Payroll: {self.emp} - {self.date.strftime('%B %Y')}"

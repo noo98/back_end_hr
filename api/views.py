@@ -60,7 +60,7 @@ def update_view_status(request, doc_id):
 class document_lcic_ListView(APIView):
     def get(self, request):
         # ດຶງຂໍ້ມູນທັງໝົດ
-        Document = document_lcic.objects.all()
+        Document = document_lcic.objects.all().order_by('-doc_id')
         # ແປງຂໍ້ມູນໃຊ້ Serializer
         serializer = document_lcicSerializer(Document, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -166,6 +166,7 @@ class activityUpdateView(APIView):
 class DepartmentListView(APIView):
     def get(self, request):
         departments = Department.objects.all()
+
         serializer = DepartmentSerializer(departments, many=True)
         return Response(serializer.data)
     
@@ -332,34 +333,43 @@ class UserView(APIView):
             )
 
     def put(self, request, us_id):
-        user = get_object_or_404(SystemUser, us_id=us_id)  # Replaces try-except for DoesNotExist
-        data = request.data
-        updated = False  # Track if we made changes
+        user = get_object_or_404(SystemUser, us_id=us_id)
+        serializer = SystemUserSerializer(user, data=request.data, partial=True)
 
-        # Update username if provided
-        username = data.get("username")
-        if username:
-            user.username = username
-            updated = True
+        if serializer.is_valid():
+            # Handle password hashing if 'password' is present
+            password = request.data.get("password")
+            if password:
+                user.password = make_password(password)
+                # Save other validated fields
+                serializer.validated_data.pop('password', None)
 
-        # Update password securely if provided
-        password = data.get("password")
-        if password:
-            user.password = make_password(password)  # Hash before saving
-            updated = True
+            serializer.save()
+            return Response({
+                "message": "ແກ້ໄຂ ສຳເລັດ",
+                "user": SystemUserSerializer(user).data
+            }, status=status.HTTP_200_OK)
 
-        if updated:  # Save only if changes were made
-            user.save()
-            serializer = SystemUserSerializer(user)
-            return Response(
-                {"message": "User updated successfully", "user": serializer.data},
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return Response(
-                {"message": "No changes detected"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self, request, us_id):
+        user = get_object_or_404(SystemUser, us_id=us_id)
+        serializer = SystemUserSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            # Handle password hashing if 'password' is present
+            password = request.data.get("password")
+            if password:
+                user.password = make_password(password)
+                serializer.validated_data.pop('password', None)
+
+            serializer.save()
+            return Response({
+                "message": "ແກ້ໄຂ ສຳເລັດ",
+                "user": SystemUserSerializer(user).data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, us_id):
         try:
@@ -654,7 +664,7 @@ class Employee_lcicView(APIView):
         if emp_id:
             employee_instances = Employee_lcic.objects.filter(emp_id=emp_id)
         else:
-            employee_instances = Employee_lcic.objects.all()
+            employee_instances = Employee_lcic.objects.all().order_by('emp_id')
         response_data = []
         for employee in employee_instances:
             emp_id = employee.emp_id
@@ -1424,7 +1434,60 @@ class user_empView(APIView):
 #         )
 
 
+from rest_framework import viewsets
+from .models import (
+    Position, Salary, SubsidyPosition, SubsidyYear,
+    FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
+    MobilePhoneSubsidy, OvertimeWork
+)
+from .serializers import (
+    PositionSerializer, SalarySerializer, SubsidyPositionSerializer,
+    SubsidyYearSerializer, FuelSubsidySerializer, AnnualPerformanceGrantSerializer,
+    SpecialDayGrantSerializer, MobilePhoneSubsidySerializer, OvertimeWorkSerializer
+)
+
 class PositionViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all()
     serializer_class = PositionSerializer
+
+
+class SalaryViewSet(viewsets.ModelViewSet):
+    queryset = Salary.objects.all()
+    serializer_class = SalarySerializer
+
+
+class SubsidyPositionViewSet(viewsets.ModelViewSet):
+    queryset = SubsidyPosition.objects.all()
+    serializer_class = SubsidyPositionSerializer
+
+
+class SubsidyYearViewSet(viewsets.ModelViewSet):
+    queryset = SubsidyYear.objects.all()
+    serializer_class = SubsidyYearSerializer
+
+
+class FuelSubsidyViewSet(viewsets.ModelViewSet):
+    queryset = FuelSubsidy.objects.all()
+    serializer_class = FuelSubsidySerializer
+
+
+class AnnualPerformanceGrantViewSet(viewsets.ModelViewSet):
+    queryset = AnnualPerformanceGrant.objects.all()
+    serializer_class = AnnualPerformanceGrantSerializer
+
+
+class SpecialDayGrantViewSet(viewsets.ModelViewSet):
+    queryset = SpecialDayGrant.objects.all()
+    serializer_class = SpecialDayGrantSerializer
+
+
+class MobilePhoneSubsidyViewSet(viewsets.ModelViewSet):
+    queryset = MobilePhoneSubsidy.objects.all()
+    serializer_class = MobilePhoneSubsidySerializer
+
+
+class OvertimeWorkViewSet(viewsets.ModelViewSet):
+    queryset = OvertimeWork.objects.all()
+    serializer_class = OvertimeWorkSerializer
+
 
