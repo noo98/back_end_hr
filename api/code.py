@@ -734,3 +734,110 @@ class Asset_Transfer(models.Model):
     status = models.CharField(max_length=100, blank=True)  # ສະຖານະການຍ່າຍ
     def __str__(self):
         return f"{self.ast_id} - {self.emp_id} - {self.date} - {self.location}"
+    
+
+
+class Position(models.Model):
+    pos_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255, unique=True)
+    sal_id = models.ForeignKey('Salary', on_delete=models.CASCADE, null=True, blank=True)  # ເງິນເດືອນ
+    sp_id = models.ForeignKey('SubsidyPosition', on_delete=models.CASCADE, null=True, blank=True)  # ສະໜັບສະໜູນຕຳແໜ່ງ
+    fs_id = models.ForeignKey('FuelSubsidy', on_delete=models.CASCADE, null=True, blank=True)  # ສະໜັບສະໜູນນ້ຳມັນ
+    ot_id = models.ForeignKey('OvertimeWork', on_delete=models.CASCADE, null=True, blank=True)  # ງານເວລາເພີ່ມ
+    mb = models.ForeignKey('MobilePhoneSubsidy', on_delete=models.CASCADE, null=True, blank=True)  # ສະໜັບສະໜູນໂທລະສັບ
+
+
+
+class Overtime_history(models.Model):
+    id = models.AutoField(primary_key=True)  # ID as AutoField
+    date = models.CharField(max_length=20,null=True, blank=True)
+    ot_id = models.BigIntegerField()
+    emp_id = models.BigIntegerField()
+    pos_id = models.BigIntegerField()
+    csd_evening = models.CharField(max_length=20,null=True, blank=True)
+    csd_night = models.CharField(max_length=20,null=True, blank=True)
+    hd_mor_after = models.CharField(max_length=20,null=True, blank=True)
+    hd_evening = models.CharField(max_length=20,null=True, blank=True)
+    hd_night = models.CharField(max_length=20,null=True, blank=True) 
+    salary = models.CharField(max_length=50,null=True, blank=True)
+    value_150 = models.CharField(max_length=20,null=True, blank=True)
+    value_200 = models.CharField(max_length=20,null=True, blank=True)
+    value_250 = models.CharField(max_length=20,null=True, blank=True)
+    value_300 = models.CharField(max_length=20,null=True, blank=True)
+    value_350 = models.CharField(max_length=20,null=True, blank=True)
+    total_ot = models.CharField(max_length=20,null=True, blank=True)
+
+class colpolicy_history(models.Model):
+    id = models.AutoField(primary_key=True)  # ID as AutoField
+    date = models.CharField(max_length=20)
+    col_id = models.BigIntegerField()
+    emp_id = models.BigIntegerField()
+    pos_id = models.BigIntegerField()
+    number_of_days = models.CharField(max_length=10)
+    amount_per_day = models.CharField(max_length=20)
+    total_amount = models.CharField(max_length=20)
+    jm_policy = models.CharField(max_length=20)
+    total_payment = models.CharField(max_length=20)
+
+
+class fuel_payment_history(models.Model):
+    id = models.AutoField(primary_key=True)  # ID as AutoField
+    fp_id = models.BigIntegerField()
+    update_date = models.CharField(max_length=20, null=True, blank=True)
+    emp_id = models.BigIntegerField()
+    emp_name = models.CharField(max_length=255, null=True, blank=True)
+    emp_id = models.BigIntegerField()
+    position = models.CharField(max_length=255, null=True, blank=True)
+    fuel_subsidy = models.CharField(max_length=50, null=True, blank=True)
+    fuel_price = models.CharField(max_length=50, null=True, blank=True)
+    total_fuel = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    # # amount_per_day = serializers.SerializerMethodField()
+    # # jm_policy = serializers.SerializerMethodField()
+    # # total_amount = serializers.SerializerMethodField()
+
+
+
+class monthly_paymentSerializer1(serializers.ModelSerializer):
+    lao_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    salary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = monthly_payment
+        fields = ["id",
+                  "date",
+                  "emp_id",
+                  "lao_name",
+                  "pos_id",
+                  "position",
+                  "salary",
+                  ]
+        
+
+    def get_y_subsidy(self, obj):
+        age_entry = self.get_age_entry(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else None
+        except ValueError:
+            age_entry = None
+        if age_entry is not None and age_entry == 0:
+            return 0
+        if age_entry is not None and age_entry < 6:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=1).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 5 and age_entry < 16:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 15 and age_entry < 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=3).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0       
+
+        subsidy_year = SubsidyYear.objects.filter(sy_id=obj.sy_id).first()
+        return subsidy_year.y_subsidy if subsidy_year else 0

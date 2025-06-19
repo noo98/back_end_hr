@@ -2,22 +2,27 @@ from rest_framework import serializers # type: ignore
 from .models import Employee_lcic
 # from .models import Documentout,Documentin
 from .models import Department,activity,document_lcic,Document_format,Document_type,SystemUser,document_general
-from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,
+from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,Fuel_payment,
                      ForeignLanguage,WorkExperience,TrainingCourse,Award, DisciplinaryAction, FamilyMember, Evaluation)
 from .models import Status,Sidebar,Document_Status
-from .models import Position
+from .models import Position,col_policy,job_mobility,income_tax
 import datetime
+import math
 import re
-from django.db import transaction
 from django.db.models import Max
-from django.db import IntegrityError
+from rest_framework import serializers
 from .models import (
-    Position, Salary, SubsidyPosition, SubsidyYear,
+    Position, Salary, SubsidyPosition, SubsidyYear,SpecialDay_Position,
     FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
-    MobilePhoneSubsidy, OvertimeWork
+    MobilePhoneSubsidy, SystemSetting, OvertimeWork,monthly_payment
 )
-
-
+from .models import Overtime_history,colpolicy_history,fuel_payment_history
+    # def to_internal_value(self, data):
+    #     try:
+    #         # ຮັບຂໍ້ມູນວັນທີໃນຮູບ ddmmyy
+    #         return datetime.strptime(data, '%d%m%Y').date()
+    #     except ValueError:
+    #         raise serializers.ValidationError('Date must be in ddmmyy format (e.g. 200525)')
 
 
 class SystemUserSerializer(serializers.ModelSerializer):
@@ -27,9 +32,7 @@ class SystemUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemUser
         fields = ['us_id', 'username','password', 'status', 'Department', 'Employee', 'pic']
-    # def get_pic(self, obj):
-    #     # ສົມມຸດວ່າ SystemUser ມີຄວາມສຳພັນ: obj.Employee.pic
-    #     return obj.Employee.pic.url if obj.Employee and obj.Employee.pic else None
+
 
 class EducationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,7 +76,7 @@ class EvaluationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PersonalInformationSerializer(serializers.ModelSerializer):
-    # education = EducationSerializer(many=True, read_only=True, source="education_set")
+    # education = EducationSerializer(many=True, read_only=True, source='education_set')
     class Meta:
         model = PersonalInformation
         fields = '__all__'
@@ -87,29 +90,29 @@ class EmployeeSerializer(serializers.ModelSerializer):
     # def validate_Department(self, value):
     #     # ตรวจสอบว่า Department มีอยู่ในฐานข้อมูล
     #     if not Department.objects.filter(id=value.id).exists():
-    #         raise serializers.ValidationError("Department does not exist.")
+    #         raise serializers.ValidationError('Department does not exist.')
     #     return value
 
     # def validate_pic(self, value):
     #     # เพิ่มการตรวจสอบเพิ่มเติมสำหรับ pic (ถ้าจำเป็น)
     #     if value:
     #         if value.size > 5 * 1024 * 1024:
-    #             raise serializers.ValidationError("Image file too large (max 5MB).")
+    #             raise serializers.ValidationError('Image file too large (max 5MB).')
     #         if value.content_type not in ['image/jpeg', 'image/png']:
-    #             raise serializers.ValidationError("Unsupported image format (only JPEG/PNG allowed).")
+    #             raise serializers.ValidationError('Unsupported image format (only JPEG/PNG allowed).')
     #     return value 
 
 
 
 
 class DocumentFormatSerializer(serializers.ModelSerializer):
-    department_id = serializers.IntegerField(source="Department.id", read_only=True)
-    department_name = serializers.CharField(source="Department.name", read_only=True)
-    user_id = serializers.IntegerField(source="us_id.us_id", read_only=True)
-    user_name = serializers.CharField(source="us_id.username", read_only=True)
+    department_id = serializers.IntegerField(source='Department.id', read_only=True)
+    department_name = serializers.CharField(source='Department.name', read_only=True)
+    user_id = serializers.IntegerField(source='us_id.us_id', read_only=True)
+    user_name = serializers.CharField(source='us_id.username', read_only=True)
     class Meta:
         model = Document_format
-        fields = ["dmf_id", "name", "department_id", "department_name", "user_id", "user_name", "insert_date", "update_date"]
+        fields = ['dmf_id', 'name', 'department_id', 'department_name', 'user_id', 'user_name', 'insert_date', 'update_date']
 
 class DocumentFormat_Serializer(serializers.ModelSerializer):
     class Meta:
@@ -147,20 +150,20 @@ class document_lcicSerializer(serializers.ModelSerializer):
     class Meta:
         model = document_lcic
         fields = [  # ระบุฟิลด์ที่ต้องการรวม (ยกเว้น 'status')
-            "doc_id",
-            "insert_date",
-            "doc_number",
-            "subject",
-            "format",
-            "doc_type",
-            "doc_type_info",
-            "file",
-            "department",
-            "document_detail",
-            "name",
-            "department_into",
-            "status",
-            "status2"
+            'doc_id',
+            'insert_date',
+            'doc_number',
+            'subject',
+            'format',
+            'doc_type',
+            'doc_type_info',
+            'file',
+            'department',
+            'document_detail',
+            'name',
+            'department_into',
+            'status',
+            'status2'
         ]
 
 class DocumentLcic_AddSerializer(serializers.ModelSerializer):
@@ -168,32 +171,29 @@ class DocumentLcic_AddSerializer(serializers.ModelSerializer):
         model = document_lcic
         fields = '__all__'   
     def create(self, validated_data):
-        # ທຳງານເມື່ອບໍ່ມີ doc_number ຖືກສົ່ງມາ
-        if not validated_data.get("doc_number"):
-            department = validated_data.get("department")
+        if not validated_data.get('doc_number'):
+            department = validated_data.get('department')
             if department:
-                prefix = getattr(department, "name_e", "")[:2].upper()
-
-                # ດຶງ doc_number ທີ່ສູງສຸດທີ່ຂຶ້ນຕົ້ນດ້ວຍ prefix
+                prefix = getattr(department, 'name_e', '')[:2].upper()
+                # ດຶງເລກສູງສຸດທີ່ເຄີຍສ້າງແລ້ວ ຈາກ doc_number
                 latest_doc = (
                     document_lcic.objects
-                    .filter(doc_number__startswith=f"{prefix}-")
-                    .aggregate(Max("doc_number"))
-                )["doc_number__max"]
+                    .filter(doc_number__startswith=f'{prefix}-')
+                    .aggregate(Max('doc_number'))
+                )['doc_number__max']
                 next_number = 1
                 if latest_doc:
-                    # ດຶງເລກທ້າຍອອກຈາກ doc_number
-                    match = re.search(rf"{prefix}-\d{{8}}-(\d+)", latest_doc)
+                    match = re.search(rf'{prefix}-\d{{8}}-(\d+)', latest_doc)
                     if match:
                         next_number = int(match.group(1)) + 1
                 today = datetime.date.today()
-                date_part = today.strftime("%d%m%Y")
-                doc_number = f"{prefix}-{date_part}-{next_number:03d}"
-                # ເຊັກວ່າບໍ່ຊ້ຳ
+                date_part = today.strftime('%d%m%Y')
+                doc_number = f'{prefix}-{date_part}-{next_number:03d}'
+                # ເຊັກອີກຄັ້ງວ່າບໍ່ຊ້ຳ
                 while document_lcic.objects.filter(doc_number=doc_number).exists():
                     next_number += 1
-                    doc_number = f"{prefix}-{date_part}-{next_number:03d}"
-                validated_data["doc_number"] = doc_number
+                    doc_number = f'{prefix}-{date_part}-{next_number:03d}'
+                validated_data['doc_number'] = doc_number
         return super().create(validated_data)
 
 
@@ -222,29 +222,29 @@ class document_general_Serializer(serializers.ModelSerializer):
         model = document_general
         fields = '__all__' 
     def create(self, validated_data):
-        if not validated_data.get("doc_number"):
-            department = validated_data.get("department")
+        if not validated_data.get('doc_number'):
+            department = validated_data.get('department')
             if department:
-                prefix = getattr(department, "name_e", "")[:2].upper()
+                prefix = getattr(department, 'name_e', '')[:2].upper()
                 # ດຶງເລກສູງສຸດທີ່ເຄີຍສ້າງແລ້ວ ຈາກ doc_number
                 latest_doc = (
                     document_general.objects
-                    .filter(doc_number__startswith=f"{prefix}-")
-                    .aggregate(Max("doc_number"))
-                )["doc_number__max"]
+                    .filter(doc_number__startswith=f'{prefix}-')
+                    .aggregate(Max('doc_number'))
+                )['doc_number__max']
                 next_number = 1
                 if latest_doc:
-                    match = re.search(rf"{prefix}-\d{{8}}-(\d+)", latest_doc)
+                    match = re.search(rf'{prefix}-\d{{8}}-(\d+)', latest_doc)
                     if match:
                         next_number = int(match.group(1)) + 1
                 today = datetime.date.today()
-                date_part = today.strftime("%d%m%Y")
-                doc_number = f"{prefix}-{date_part}-{next_number:03d}"
+                date_part = today.strftime('%d%m%Y')
+                doc_number = f'{prefix}-{date_part}-{next_number:03d}'
                 # ເຊັກອີກຄັ້ງວ່າບໍ່ຊ້ຳ
                 while document_general.objects.filter(doc_number=doc_number).exists():
                     next_number += 1
-                    doc_number = f"{prefix}-{date_part}-{next_number:03d}"
-                validated_data["doc_number"] = doc_number
+                    doc_number = f'{prefix}-{date_part}-{next_number:03d}'
+                validated_data['doc_number'] = doc_number
         return super().create(validated_data)
     
 class StatusSerializer(serializers.ModelSerializer):
@@ -288,7 +288,7 @@ class User_emp_Serializer(serializers.ModelSerializer):
 #                     # ຄົ້ນຫາ cat_num ທີ່ມີຄ່າສູງສຸດ
 #                     max_num = Category.objects.aggregate(Max('cat_num'))['cat_num__max']
 #                     if max_num:
-#                         # ສະກັດຕົວເລກຈາກ cat_num (ເຊັ່ນ: "01" -> 1)
+#                         # ສະກັດຕົວເລກຈາກ cat_num (ເຊັ່ນ: '01' -> 1)
 #                         num = int(max_num) + 1
 #                     else:
 #                         num = 1
@@ -301,7 +301,10 @@ class User_emp_Serializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Asset
 #         fields = '__all__'
-
+class CustomDateField(serializers.DateField):
+    def to_representation(self, value):
+        # ສະແດງຂໍ້ມູນວັນທີໃນຮູບ ddmmyy
+        return value.strftime('%d-%m-%Y')
 
 class user_empSerializer(serializers.ModelSerializer):
     class Meta:
@@ -310,6 +313,10 @@ class user_empSerializer(serializers.ModelSerializer):
 
 
 class PositionSerializer(serializers.ModelSerializer):
+    # fuel_subsidy = serializers.CharField(source='fs_id.fuel_subsidy', read_only=True)
+    # salary = serializers.CharField(source='sal_id.SalaryGrade', read_only=True)
+    # SubsidyPosition = serializers.CharField(source='sp_id.grant', read_only=True)
+    # mobilephone = serializers.CharField(source='mb.grant', read_only=True)
     class Meta:
         model = Position
         fields = '__all__'
@@ -320,44 +327,567 @@ class SalarySerializer(serializers.ModelSerializer):
         model = Salary
         fields = '__all__'
 
-
 class SubsidyPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubsidyPosition
         fields = '__all__'
-
 
 class SubsidyYearSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubsidyYear
         fields = '__all__'
 
+class SystemSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemSetting
+        fields = ['id', 'key', 'value']
 
 class FuelSubsidySerializer(serializers.ModelSerializer):
     class Meta:
         model = FuelSubsidy
         fields = '__all__'
 
+class get_FuelSubsidySerializer(serializers.ModelSerializer):
+    update_date = CustomDateField(read_only=True)
+    fuel_price = serializers.CharField(source='fuel_price.value', read_only=True)
+    emp_id =serializers.SerializerMethodField()
+    date_price = CustomDateField(source='fuel_price.date', read_only=True)
+    def get_emp_id(self, obj):
+        if not obj.pos_id:
+            return None
+        employee = Employee_lcic.objects.filter(pos_id=obj.pos_id).first()
+        return employee.emp_id if employee else None
+    class Meta:
+        model = FuelSubsidy
+        fields = ['fs_id','emp_id','pos_id','update_date','fuel_subsidy','fuel_price','total_fuel','date_price']      
+
+class fuel_paymentSerializer(serializers.ModelSerializer):
+    emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    fuel_subsidy = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    fuel_price = serializers.SerializerMethodField()
+    total_fuel = serializers.SerializerMethodField()
+    def get_fuel_subsidy(self, obj):
+        if not obj.emp_id or not obj.emp_id.pos_id:
+            return None
+        fuel_subsidy = FuelSubsidy.objects.filter(pos_id=obj.emp_id.pos_id).first()
+        if fuel_subsidy:
+            return fuel_subsidy.fuel_subsidy
+        
+    def get_date(self, obj):
+        setting = SystemSetting.objects.filter(key="fuel_price").first()
+        if setting:
+            return setting.date
+        return None
+
+    def get_fuel_price(self, obj):
+        if not obj.emp_id or not obj.emp_id.pos_id:
+            return None
+        fuel_subsidy = FuelSubsidy.objects.filter(pos_id=obj.emp_id.pos_id).first()
+        if fuel_subsidy and fuel_subsidy.fuel_price:
+            return fuel_subsidy.fuel_price.value
+        return None
+    def get_total_fuel(self, obj):
+        if not obj.emp_id or not obj.emp_id.pos_id:
+            return None
+        fuel_subsidy = FuelSubsidy.objects.filter(pos_id=obj.emp_id.pos_id).first()
+        if fuel_subsidy:
+            return fuel_subsidy.total_fuel
+        return None
+    class Meta:
+        model = Fuel_payment
+        fields = ['fp_id','date','emp_id','emp_name','pos_id','position','fuel_subsidy','fuel_price','total_fuel']
 
 class AnnualPerformanceGrantSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = AnnualPerformanceGrant
         fields = '__all__'
 
+class SpecialDayPositionSerializer(serializers.ModelSerializer):
+    position = PositionSerializer()
+    class Meta:
+        model = SpecialDay_Position
+        fields = ['position', 'grant']
 
 class SpecialDayGrantSerializer(serializers.ModelSerializer):
+    positions = SpecialDayPositionSerializer(source='specialday_position_set', many=True)
     class Meta:
         model = SpecialDayGrant
-        fields = '__all__'
-
+        fields = ['sdg_id', 'occasion_name', 'positions']
 
 class MobilePhoneSubsidySerializer(serializers.ModelSerializer):
     class Meta:
         model = MobilePhoneSubsidy
         fields = '__all__'
 
+class col_policySerializer(serializers.ModelSerializer):
+    # emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.CharField(source='emp_id.pos_id.pos_id', read_only=True)
+    number_of_days = serializers.SerializerMethodField()
+    amount_per_day = serializers.SerializerMethodField()
+    jm_policy = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
+    total_payment = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+
+    def _get_job_mobility_data(self, obj):
+        if obj.emp_id and obj.emp_id.pos_id:
+            return job_mobility.objects.filter(pos_id=obj.emp_id.pos_id).first()
+        return None
+
+    def get_number_of_days(self, obj):
+        jm = self._get_job_mobility_data(obj)
+        return jm.number_of_days if jm else None
+
+    def get_amount_per_day(self, obj):
+        jm = self._get_job_mobility_data(obj)
+        return jm.amount_per_day if jm else None
+    def get_date(self, obj):
+        jm = self._get_job_mobility_data(obj)
+        return jm.date if jm else None
+
+    def get_jm_policy(self, obj):
+        jm = self._get_job_mobility_data(obj)
+        return jm.jm_policy if jm else None
+
+    def get_total_amount(self, obj):
+        days = self.get_number_of_days(obj)
+        rate = self.get_amount_per_day(obj)
+        return days * rate if days and rate else 0
+
+    def get_total_payment(self, obj):
+        total = self.get_total_amount(obj)
+        policy = self.get_jm_policy(obj)
+        return total + policy if policy else total
+
+    class Meta:
+        model = col_policy
+        fields = ['col_id','date', 'emp_id', 'date', 'pos_id',
+                  'number_of_days', 'amount_per_day', 'total_amount',
+                  'jm_policy', 'total_payment']
 
 class OvertimeWorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = OvertimeWork
         fields = '__all__'
+
+class get_OvertimeWorkSerializer(serializers.ModelSerializer):
+    value_150 = serializers.SerializerMethodField()
+    value_200 = serializers.SerializerMethodField()
+    value_250 = serializers.SerializerMethodField()
+    value_300 = serializers.SerializerMethodField()
+    value_350 = serializers.SerializerMethodField()
+    salary = serializers.SerializerMethodField()
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+
+    def get_salary(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        salary = Salary.objects.filter(pos_id=employee.pos_id).first()
+        return salary.SalaryGrade if salary else None
+
+    def calculate_ot_value(self, obj, hours, rate_percent):
+        if not obj.emp_id or not obj.emp_id.pos_id:
+            return 0
+        salary = Salary.objects.filter(pos_id=obj.emp_id.pos_id).first()
+        if not salary or not hours:
+            return 0
+        base_hourly_rate = salary.SalaryGrade / 26 / 8
+        ot_value = base_hourly_rate * hours * rate_percent / 100
+        return math.ceil(ot_value)
+
+    def get_value_150(self, obj):
+        return self.calculate_ot_value(obj, obj.csd_evening, 150)
+
+    def get_value_200(self, obj):
+        return self.calculate_ot_value(obj, obj.csd_night, 200)
+
+    def get_value_250(self, obj):
+        return self.calculate_ot_value(obj, obj.hd_mor_after, 250)
+
+    def get_value_300(self, obj):
+        return self.calculate_ot_value(obj, obj.hd_evening, 300)
+
+    def get_value_350(self, obj):
+        return self.calculate_ot_value(obj, obj.hd_night, 350)
+
+    def calculate_total_ot(self, obj):
+        return (
+            self.get_value_150(obj) +
+            self.get_value_200(obj) +
+            self.get_value_250(obj) +
+            self.get_value_300(obj) +
+            self.get_value_350(obj)
+        )
+
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        instance.total_ot = self.calculate_total_ot(instance)
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        instance.total_ot = self.calculate_total_ot(instance)
+        instance.save()
+        return instance
+
+    class Meta:
+        model = OvertimeWork
+        fields = [
+            'ot_id',
+            'date',
+            'emp_id',
+            'emp_name',
+            'pos_id',
+            'position',
+            'csd_evening',
+            'csd_night',
+            'hd_mor_after',
+            'hd_evening',
+            'hd_night',
+            'salary',
+            'value_150',
+            'value_200',
+            'value_250',
+            'value_300',
+            'value_350',
+            'total_ot',
+        ]
+class income_taxSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = income_tax
+        fields = '__all__'
+from decimal import Decimal
+class monthly_paymentSerializer1(serializers.ModelSerializer):
+    lao_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    salary = serializers.SerializerMethodField()
+    total_ot = serializers.SerializerMethodField()
+    salary_payment = serializers.SerializerMethodField()
+    fuel_payment = serializers.SerializerMethodField()
+    # totol_payment = serializers.SerializerMethodField()
+    age_entry = serializers.SerializerMethodField()
+    y_subsidy = serializers.SerializerMethodField()
+    total_subsidy_y = serializers.SerializerMethodField()
+    subsidyPosition = serializers.SerializerMethodField()
+    total_basic_income = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_8 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_5_5 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_8_5 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_6 = serializers.SerializerMethodField()
+    total_regular_income = serializers.SerializerMethodField()
+    other_non_regular = serializers.SerializerMethodField()
+    total_income_before_tax = serializers.SerializerMethodField()
+    tax_exempt = serializers.SerializerMethodField()
+    total_income_after_exempt = serializers.SerializerMethodField()
+    calculate_taxes_0 = serializers.SerializerMethodField()
+    calculate_taxes_5 = serializers.SerializerMethodField()
+    calculate_taxes_10 = serializers.SerializerMethodField()
+    calculate_taxes_15 = serializers.SerializerMethodField()
+    calculate_taxes_20 = serializers.SerializerMethodField()
+    calculate_taxes_25 = serializers.SerializerMethodField()
+    tortal_tax = serializers.SerializerMethodField()
+    # tariff = serializers.SerializerMethodField()
+
+    def get_subsidyPosition(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        sp_id = SubsidyPosition.objects.filter(pos_id=employee.pos_id).first()
+        return sp_id.grant if sp_id else None
+ 
+    def get_age_entry(self, obj):
+        if not obj.emp_id:
+            return None
+        age_entry = Employee_lcic.objects.filter(emp_id=obj.emp_id.emp_id).first()
+        return age_entry.age_entry if age_entry else None
+    
+    def get_y_subsidy(self, obj):
+        age_entry = self.get_age_entry(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else None
+        except ValueError:
+            age_entry = None
+        if age_entry is not None and age_entry == 0:
+            return 0
+        if age_entry is not None and age_entry < 6:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=1).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 5 and age_entry < 16:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 15 and age_entry < 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=3).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0       
+
+        subsidy_year = SubsidyYear.objects.filter(sy_id=obj.sy_id).first()
+        return subsidy_year.y_subsidy if subsidy_year else 0
+
+    def get_total_subsidy_y(self, obj):
+        age_entry = self.get_age_entry(obj)
+        y_subsidy = self.get_y_subsidy(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else 0
+        except ValueError:
+            age_entry = 0
+        try:
+            y_subsidy = int(y_subsidy) if y_subsidy is not None else 0
+        except ValueError:
+            y_subsidy = 0
+        return age_entry * y_subsidy
+
+    def get_salary(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        salary = Salary.objects.filter(pos_id=employee.pos_id).first()
+        return salary.SalaryGrade if salary else None
+    
+    def get_total_ot(self, obj):
+        overtime = OvertimeWork.objects.filter(emp_id=obj.emp_id).first()
+        if not overtime:
+            return None
+        return overtime.total_ot if overtime.total_ot else 0
+
+    def get_salary_payment(self, obj):
+        subsidyPosition = self.get_subsidyPosition(obj) or 0
+        salary = self.get_salary(obj)
+        total_ot = self.get_total_ot(obj) 
+        total_subsidy_y = self.get_total_subsidy_y(obj) or 0
+        if salary is None:
+            return 0
+        if total_ot is None:
+            total_ot = 0
+        return math.ceil(float(salary) + float(total_ot)+ float(total_subsidy_y)+ float(subsidyPosition or 0))
+    
+    # def get_totol_payment(self, obj):
+    #     total_fuel = self.get_fuel_payment(obj) or 0
+    #     salary_payment = self.get_salary_payment(obj) or 0
+    #     return math.ceil(float(total_fuel)+ float(salary_payment))
+
+    def get_fuel_payment(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return 0
+        fuel_payment = FuelSubsidy.objects.filter(pos_id=employee.pos_id).first()
+        return fuel_payment.total_fuel if fuel_payment and fuel_payment.total_fuel else 0
+    
+    def get_total_basic_income(self, obj):
+        salary = self.get_salary(obj) or 0
+        subsidyPosition = self.get_subsidyPosition(obj) or 0
+        total_subsidy_y = self.get_total_subsidy_y(obj) or 0
+        total_ot = self.get_total_ot(obj) or 0
+        return math.ceil(float(salary) + float(subsidyPosition) + float(total_subsidy_y)+ float(total_ot))
+    
+    def get_total_regular_income(self, obj):
+        total_basic_income = self.get_total_basic_income(obj) or 0
+        fuel_payment = self.get_fuel_payment(obj) or 0
+        return math.ceil(float(total_basic_income) + float(fuel_payment))
+    
+    def get_other_non_regular(self, obj):
+        col = col_policy.objects.filter(emp_id=obj.emp_id).order_by('-col_id').first()
+        if not col:
+            return 0.0
+        # ดึง job_mobility ตามตำแหน่ง
+        jm = job_mobility.objects.filter(pos_id=obj.emp_id.pos_id).order_by('-date').first()
+        if not jm:
+            return 0.0
+        # คำนวณเหมือนใน col_policySerializer
+        total_amount = (jm.number_of_days or 0) * (jm.amount_per_day or 0)
+        total_payment = total_amount + (jm.jm_policy or 0)
+        return total_payment
+     
+    def get_total_income_before_tax(self, obj):
+        total_regular_income = self.get_total_regular_income(obj) or 0
+        other_non_regular = self.get_other_non_regular(obj) or 0
+        return math.ceil(float(total_regular_income) + float(other_non_regular))
+    
+    def get_total_income_after_exempt(self, obj):
+        total_regular_income = self.get_total_regular_income(obj) or 0
+        other_non_regular = self.get_other_non_regular(obj) or 0
+        tex_exempt = self.get_tax_exempt(obj) or 0
+        return math.ceil(float(total_regular_income) + float(other_non_regular)- float(tex_exempt))
+    
+    def get_calculate_taxes_0(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj)
+        if income_after_exempt <= Decimal('1300000.00'):
+            return 0 
+        tariff1 = income_tax.objects.filter(tax_id=1).first()
+        return tariff1.tariff if tariff1 else 0
+        
+    def get_calculate_taxes_5(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj) or Decimal('0')
+        if income_after_exempt > Decimal('1300000.00') and income_after_exempt <= Decimal('5000000.00'):
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            return tariff2.tariff * income_after_exempt if tariff2 else Decimal('0')
+        if Decimal('5000000.00') < income_after_exempt :
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            if tariff2:
+                return (tariff2.calculation_base * tariff2.tariff)
+            return Decimal('0')
+
+    def get_calculate_taxes_10(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj) or Decimal('0')
+        if income_after_exempt > Decimal('5000000.00') and income_after_exempt <= Decimal('15000000.00'):
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            return (income_after_exempt - tariff2.calculation_base) * tariff3.tariff if tariff3 else Decimal('0')
+        if Decimal('10000000.00') < income_after_exempt :
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            if tariff3:
+                return (tariff3.calculation_base * tariff3.tariff)
+            return Decimal('0')
+
+    def get_calculate_taxes_15(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj) or Decimal('0')
+        if income_after_exempt > Decimal('15000000.00') and income_after_exempt <= Decimal('25000000.00'):
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            return (income_after_exempt - (tariff3.calculation_base + tariff2.calculation_base)) * tariff4.tariff  if tariff4 else Decimal('0')
+        if Decimal('10000000.00') < income_after_exempt :
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            if tariff4 and tariff4:
+                return (tariff4.calculation_base * tariff4.tariff)
+            return Decimal('0')
+        
+    def get_calculate_taxes_20(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj) or Decimal('0')
+        if income_after_exempt > Decimal('25000000.00') and income_after_exempt <= Decimal('65000000.00'):
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            return (income_after_exempt - (tariff2.calculation_base + tariff3.calculation_base + tariff4.calculation_base)) *tariff5.tariff  if tariff5 else Decimal('0')
+        if Decimal('25000000.00') < income_after_exempt :
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            if tariff5:
+                return (tariff5.calculation_base * tariff5.tariff)
+            return Decimal('0')
+    
+    def get_calculate_taxes_25(self, obj):
+        income_after_exempt = self.get_total_income_after_exempt(obj) or Decimal('0')
+        if income_after_exempt > Decimal('65000000.00'):
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            tariff6 = income_tax.objects.filter(tax_id=6).first()
+            return (income_after_exempt - (tariff2.calculation_base + tariff3.calculation_base + tariff4.calculation_base + tariff5.calculation_base)) * tariff6.tariff if tariff6 else Decimal('0')
+
+    def get_tortal_tax(self, obj):
+        tax_0 = self.get_calculate_taxes_0(obj) or Decimal('0')
+        tax_5 = self.get_calculate_taxes_5(obj) or Decimal('0')
+        tax_10 = self.get_calculate_taxes_10(obj) or Decimal('0')
+        tax_15 = self.get_calculate_taxes_15(obj) or Decimal('0')
+        tax_20 = self.get_calculate_taxes_20(obj) or Decimal('0')
+        tax_25 = self.get_calculate_taxes_25(obj) or Decimal('0')
+        return math.ceil(float(tax_0 + tax_5 + tax_10 + tax_15 + tax_20 + tax_25))
+
+    def get_tax_exempt(self, obj):
+        return 1300000
+    def get_Deduct_into_the_welfare_fund_8(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_5_5(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_8_5(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_6(self, obj):
+        return 0
+    class Meta:
+        model = monthly_payment
+        fields = ["id",
+                  "date",
+                  "emp_id",
+                  "lao_name",
+                  "pos_id",
+                  "position",
+                  "salary",
+                  "Deduct_into_the_welfare_fund_8",
+                    "Deduct_into_the_welfare_fund_5_5",
+                    "Deduct_into_the_welfare_fund_8_5",
+                    "Deduct_into_the_welfare_fund_6",
+                  "subsidyPosition",
+                  "age_entry",
+                  "y_subsidy",
+                  "total_subsidy_y",
+                  "total_ot",
+                  "total_basic_income",
+                  "fuel_payment",
+                    "total_regular_income",
+                    "other_non_regular",
+                    "total_income_before_tax",
+                    "tax_exempt",
+                    "total_income_after_exempt",
+                    "calculate_taxes_0",
+                    "calculate_taxes_5",
+                    "calculate_taxes_10",
+                    "calculate_taxes_15",
+                    "calculate_taxes_20",
+                    "calculate_taxes_25",
+                    "tortal_tax",
+                  "salary_payment"
+                  
+                  ]
+
+class post_Overtime_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = Overtime_history
+        fields = '__all__'
+class get_Overtime_historyserializer(serializers.ModelSerializer):
+    emp_name = serializers.SerializerMethodField()
+    pos_name = serializers.SerializerMethodField()
+    def get_emp_name(self, obj):
+        emp_name = Employee_lcic.objects.filter(emp_id=obj.emp_id).first()
+        if not obj.emp_id:
+            return None
+        return emp_name.lao_name
+    def get_pos_name(self, obj):
+        pos_name = Position.objects.filter(pos_id=obj.pos_id).first()
+        if not obj.pos_id:
+            return None
+        return pos_name.name if pos_name else None
+    class Meta:
+        model = Overtime_history
+        fields = ['date','ot_id', 'emp_id', 'emp_name','pos_name', 'csd_evening', 'csd_night', 'hd_mor_after', 'hd_evening', 'hd_night','salary','value_150', 'value_200', 'value_250', 'value_300', 'value_350', 'total_ot']
+
+class post_colpolicy_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = colpolicy_history
+        fields = '__all__'
+class get_colpolicy_historyserializer(serializers.ModelSerializer):
+    emp_name = serializers.SerializerMethodField()
+    pos_name = serializers.SerializerMethodField()
+    def get_emp_name(self, obj):
+        emp_name = Employee_lcic.objects.filter(emp_id=obj.emp_id).first()
+        if not obj.emp_id:
+            return None
+        return emp_name.lao_name
+    def get_pos_name(self, obj):
+        pos_name = Position.objects.filter(pos_id=obj.pos_id).first()
+        if not obj.pos_id:
+            return None
+        return pos_name.name if pos_name else None
+    class Meta:
+        model = colpolicy_history
+        fields = ['col_id', 'date','emp_id','emp_name', 'pos_name', 'number_of_days', 'amount_per_day', 'total_amount', 'jm_policy', 'total_payment']
+        
+class post_fuel_payment_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = fuel_payment_history
+        fields = '__all__'
+class get_fuel_payment_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = fuel_payment_history
+        fields = ['fp_id', 'date', 'emp_name', 'position', 'fuel_subsidy', 'fuel_price', 'total_fuel']

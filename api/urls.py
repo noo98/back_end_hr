@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import UserView,LoginView
-from .views import Employee_lcicView,EmployeeInfoAPI
+from .views import Employee_lcicView,EmployeeInfoAPI,UpdateAllJobMobilityAPIView
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_deleteView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
 from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View,DocumentFormatSearchView
@@ -10,26 +10,32 @@ from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusD
 # from .views import AssetTypeView,AssetView,CategoryView,CategorySearchView
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import update_view_status
+# from .views import update_view_status
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import PositionViewSet
+from .views import FuelSubsidyView
+from .views import reset_all_overtimes
+from .views import Overtime_historyView, colpolicy_historyView, fuel_payment_historyView
 from .views import (
-    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,
-    SubsidyYearViewSet, FuelSubsidyViewSet, AnnualPerformanceGrantViewSet,
-    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet, OvertimeWorkViewSet
+    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,monthly_paymentViewSet,
+    SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,
+    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet
 )
 router = DefaultRouter()
 router.register(r'positions', PositionViewSet)
+router.register(r'fuel_payment', Fuel_pamentViewSet)
 router.register(r'sal', SalaryViewSet)
 router.register(r'sp', SubsidyPositionViewSet)
 router.register(r'sy', SubsidyYearViewSet)
-router.register(r'fs', FuelSubsidyViewSet)
 router.register(r'apg', AnnualPerformanceGrantViewSet)
 router.register(r'sdg', SpecialDayGrantViewSet)
 router.register(r'mps', MobilePhoneSubsidyViewSet)
-router.register(r'ot', OvertimeWorkViewSet)
-
+router.register(r'col_policy', col_policyViewSet)
+router.register(r'income_tax', income_taxViewSet)
+# router.register(r'ot', OvertimeWorkViewSet)
+router.register(r'mon_ly', monthly_paymentViewSet)
+from .views import get_position_details
 urlpatterns = [
     path('users/', UserView.as_view(), name='user-list-create'),
     path('users/<int:us_id>/', UserView.as_view(), name='user-update-delete'),
@@ -96,5 +102,28 @@ urlpatterns = [
     # path('category/search/', CategorySearchView.as_view(), name='category-search'),
 
     path('', include(router.urls)),
+
+    # path('fuel-price/', FuelPriceView.as_view(), name='fuel-price'),
+
+    path('fuel/', FuelSubsidyView.as_view(), name='fuel_subsidy_list'),
+    path('fuel/<int:fs_id>/', FuelSubsidyView.as_view(), name='fuel_subsidy_detail'),
+
+    path('emp_sal/<int:emp_id>', get_position_details, name='employee-position-details'),
+
+    path('ot/', ovtimeWorkView.as_view(), name='monthly-payment-list-create'),
+    path('ot/<int:ot_id>/', ovtimeWorkView.as_view(), name='monthly-payment-update-delete'),
+    path('reset_all_ot/', reset_all_overtimes, name='reset-all-overtimes'),
+
+    #History
+
+    path('ot_history/', Overtime_historyView.as_view(), name='overtime-history-list'),
+    path('ot_history/<int:emp_id>/', Overtime_historyView.as_view(), name='overtime-history-detail'),
+
+    path('col_history/', colpolicy_historyView.as_view(), name='col_policy-history-list'),
+    path('col_history/<int:emp_id>/', colpolicy_historyView.as_view(), name='col_policy-history-detail'),
+    path('job_update_all/', UpdateAllJobMobilityAPIView.as_view(), name='update_all_job_mobility'),
+
+    path('fuel_history/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_list'),
+    path('fuel_history/<int:emp_id>/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_detail'),
 
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
