@@ -10,13 +10,18 @@ from .serializers import EmployeeSerializer  # ສ້າງ Serializer ກ່ອ
 from .models import activity
 from django.http import JsonResponse, Http404
 from .models import Position, Salary, SubsidyPosition, FuelSubsidy, MobilePhoneSubsidy, OvertimeWork,monthly_payment,col_policy,income_tax
-from .models import SystemUser,Fuel_payment
-from .serializers import SystemUserSerializer,DocumentFormatSerializer,DocumentFormat_Serializer,fuel_paymentSerializer
-from .serializers import activitySerializer,income_taxSerializer
-from .models import Department,Document_format,document_general,job_mobility
+from .models import SystemUser,Fuel_payment,Saving_cooperative
+from .serializers import SystemUserSerializer,DocumentFormatSerializer,DocumentFormat_Serializer,fuel_paymentSerializer,Specialday_empserialiser
+from .serializers import activitySerializer,income_taxSerializer,Saving_cooperativeSerializer,monthly_paymentSerializer1,Specialday_PositionSerializer
+from .models import Department,Document_format,document_general,job_mobility,SpecialDay_Position
 from .serializers import DepartmentSerializer,document_lcicSerializer,DocumentLcic_AddSerializer,document_general_Serializer,StatusSerializer,SidebarSerializer
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
+from django.db.models.functions import ExtractMonth, ExtractYear
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import OvertimeWork
 import os
 from django.conf import settings
 from datetime import datetime
@@ -38,7 +43,17 @@ from .models import Document_Status
 from .models import Overtime_history,colpolicy_history,fuel_payment_history
 from .serializers import (get_Overtime_historyserializer,post_Overtime_historyserializer,post_colpolicy_historyserializer,get_colpolicy_historyserializer,get_fuel_payment_historyserializer,
 post_fuel_payment_historyserializer)
-
+from rest_framework import viewsets
+from .models import (
+    Position, Salary, SubsidyPosition, SubsidyYear,
+    FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
+    MobilePhoneSubsidy, OvertimeWork
+)
+from .serializers import (
+    PositionSerializer, SalarySerializer, SubsidyPositionSerializer,get_FuelSubsidySerializer,
+    SubsidyYearSerializer, FuelSubsidySerializer, AnnualPerformanceGrantSerializer,
+    SpecialDayGrantSerializer, MobilePhoneSubsidySerializer, OvertimeWorkSerializer ##,MonthlyPayment1Serializer
+)
 import logging
 from django.db import transaction 
 from rest_framework.generics import get_object_or_404
@@ -321,7 +336,7 @@ class UserView(APIView):
             elif username:
                 user = SystemUser.objects.get(username=username)
             else:
-                users = SystemUser.objects.all()
+                users = SystemUser.objects.all().order_by('Employee__pos_id__pos_id')
                 serializer = SystemUserSerializer(users, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             
@@ -333,16 +348,14 @@ class UserView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
-        # ສະແດງຂໍ້ມູນທັງໝົດ
         try:
-            data = request.data
+            data = request.data.copy()  # copy เพื่อแก้ไขได้
             password = data.get("password")
 
             if password:
                 data["password"] = make_password(password)
 
             serializer = SystemUserSerializer(data=data)
-
             if serializer.is_valid():
                 serializer.save()
                 return Response(
@@ -358,14 +371,19 @@ class UserView(APIView):
 
     def put(self, request, us_id):
         user = get_object_or_404(SystemUser, us_id=us_id)
-        serializer = SystemUserSerializer(user, data=request.data, partial=True)
+        data = request.data.copy()
+
+        # Remove username from update data to prevent modification
+        if 'username' in data:
+            data.pop('username')
+
+        serializer = SystemUserSerializer(user, data=data, partial=True)
 
         if serializer.is_valid():
-            # Handle password hashing if 'password' is present
-            password = request.data.get("password")
+            password = data.get("password")
             if password:
                 user.password = make_password(password)
-                # Save other validated fields
+                # Remove password so serializer.save() doesn't overwrite
                 serializer.validated_data.pop('password', None)
 
             serializer.save()
@@ -378,11 +396,16 @@ class UserView(APIView):
     
     def patch(self, request, us_id):
         user = get_object_or_404(SystemUser, us_id=us_id)
-        serializer = SystemUserSerializer(user, data=request.data, partial=True)
+        data = request.data.copy()
+
+        # Remove username from update data to prevent modification
+        if 'username' in data:
+            data.pop('username')
+
+        serializer = SystemUserSerializer(user, data=data, partial=True)
 
         if serializer.is_valid():
-            # Handle password hashing if 'password' is present
-            password = request.data.get("password")
+            password = data.get("password")
             if password:
                 user.password = make_password(password)
                 serializer.validated_data.pop('password', None)
@@ -413,6 +436,7 @@ class UserView(APIView):
                 {"error": f"An error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 class LoginView(APIView):
     def post(self, request):
@@ -1458,17 +1482,6 @@ class user_empView(APIView):
 #         )
 
 
-from rest_framework import viewsets
-from .models import (
-    Position, Salary, SubsidyPosition, SubsidyYear,
-    FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
-    MobilePhoneSubsidy, OvertimeWork
-)
-from .serializers import (
-    PositionSerializer, SalarySerializer, SubsidyPositionSerializer,get_FuelSubsidySerializer,
-    SubsidyYearSerializer, FuelSubsidySerializer, AnnualPerformanceGrantSerializer, monthly_paymentSerializer1,
-    SpecialDayGrantSerializer, MobilePhoneSubsidySerializer, OvertimeWorkSerializer ##,MonthlyPayment1Serializer
-)
 
 class PositionViewSet(viewsets.ModelViewSet):
     queryset = Position.objects.all().order_by('pos_id')
@@ -1491,8 +1504,12 @@ class AnnualPerformanceGrantViewSet(viewsets.ModelViewSet):
     serializer_class = AnnualPerformanceGrantSerializer
 
 class SpecialDayGrantViewSet(viewsets.ModelViewSet):
-    queryset = SpecialDayGrant.objects.all()
-    serializer_class = SpecialDayGrantSerializer
+    queryset = SpecialDay_Position.objects.all().order_by('special_day','pos_id')
+    serializer_class = Specialday_PositionSerializer
+class SpecialDay_empViewSet(viewsets.ModelViewSet):
+    queryset = Employee_lcic.objects.all().order_by('pos_id')
+    serializer_class = Specialday_empserialiser
+
 
 class MobilePhoneSubsidyViewSet(viewsets.ModelViewSet):
     queryset = MobilePhoneSubsidy.objects.all()
@@ -1687,8 +1704,12 @@ def get_position_details(request, emp_id):
         'total_fuel': str(fuel_subsidy.total_fuel) if fuel_subsidy and fuel_subsidy.total_fuel else None,
     })
 
+class Saving_cooperativeViewSet(viewsets.ModelViewSet):
+    queryset = Saving_cooperative.objects.all().order_by('emp_id__pos_id_id')
+    serializer_class = Saving_cooperativeSerializer
+
 class monthly_paymentViewSet(viewsets.ModelViewSet):
-    queryset = monthly_payment.objects.all()
+    queryset = monthly_payment.objects.all().order_by('emp_id__pos_id_id')
     serializer_class = monthly_paymentSerializer1
 
 class col_policyViewSet(viewsets.ModelViewSet):
@@ -1716,12 +1737,9 @@ class UpdateAllJobMobilityAPIView(APIView):
             return Response({"message": "Updated all job mobility records successfully."}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            
-from django.db.models.functions import ExtractMonth, ExtractYear
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import OvertimeWork
+
+#history
+
 @api_view(['POST'])
 def reset_all_overtimes(request):
     overtimes = OvertimeWork.objects.all()
@@ -1835,7 +1853,7 @@ class colpolicy_historyView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ (ຕາມເດືອນ-ປີ)',
+                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
                 # 'duplicates': duplicates
             }, status=status.HTTP_400_BAD_REQUEST)
 

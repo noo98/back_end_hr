@@ -50,7 +50,7 @@ class Employee_lcic(models.Model):
     pic = models.ImageField(upload_to='emp_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
 
     def __str__(self):
-        return f"{self.emp_id} - {self.name_E} ({self.nickname})"
+        return f"{self.emp_id} - {self.eng_name} ({self.nickname})"
 
     def save(self, *args, **kwargs):
         if self.year_entry:
@@ -320,11 +320,10 @@ class AnnualPerformanceGrant(models.Model):
 
 class SpecialDayGrant(models.Model):
     sdg_id = models.AutoField(primary_key=True)
-    pos_id = models.ManyToManyField('Position', through='SpecialDay_Position', blank=True)
     occasion_name = models.CharField(max_length=255)
 class SpecialDay_Position(models.Model):
     special_day = models.ForeignKey(SpecialDayGrant, on_delete=models.CASCADE)
-    position = models.ForeignKey(Position, on_delete=models.CASCADE)
+    pos_id = models.ForeignKey(Position, on_delete=models.CASCADE)
     grant = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ຈຳນວນເງິນທີ່ເພີ່ມໃນວັນສຳຄັນ
 
 class MobilePhoneSubsidy(models.Model):
@@ -343,12 +342,24 @@ class OvertimeWork(models.Model):
     hd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນພັກເງິນເພີ່ມໃນຕອນກາງຄືນ 22:00-6:00
     total_ot = models.BigIntegerField(null=True, blank=True)  # ຍອມໃຫ້ປ່ຽນແປງໄດ້ ແລະໃສ່ຄ່າວ່າງໄດ້
 
+class Saving_cooperative(models.Model):
+    sc_id = models.AutoField(primary_key=True)
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE) # ລະຫັດພະນັກງານ
+    loan_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນກູ້
+    interest = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ອັດຕາດອກເບີກ
+    deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນຝາກ
+    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນຫຼຸດການກູ້ 194
+    date = models.DateField(auto_now=True) # ວັນທີ່ບັນທຶກ
+
+
 class monthly_payment(models.Model):
     id = models.AutoField(primary_key=True)
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
-    sy_id = models.ForeignKey(SubsidyYear, on_delete=models.CASCADE, null=True, blank=True)  # ຕຳແໜ່ງ  
-    date = models.DateField(auto_now_add=True)  # ວັນທີ່ຈ່າຍເງິນ
-    total_payment = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)#ອໍໂຕ
+    sy_id = models.ForeignKey(SubsidyYear, on_delete=models.CASCADE, null=True, blank=True)  # ປີທີ່ຈ່າຍເງິນ 
+    date = models.DateField(auto_now_add=True)  # ວັນທີ່ຈ່າຍເງິນ     
+    child = models.IntegerField(null=True, blank=True)  # ລູກ
+    child_Subsidy = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ອຸດໜູນລູກ
+    health_Subsidy = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ອຸດໜູນສຸຂະພາບ
 
 class col_policy(models.Model):
     col_id = models.AutoField(primary_key=True)

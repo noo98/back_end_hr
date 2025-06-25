@@ -841,3 +841,448 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
 
         subsidy_year = SubsidyYear.objects.filter(sy_id=obj.sy_id).first()
         return subsidy_year.y_subsidy if subsidy_year else 0
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+class monthly_paymentSerializer1(serializers.ModelSerializer):
+    lao_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    salary = serializers.SerializerMethodField()
+    total_ot = serializers.SerializerMethodField()
+    salary_payment = serializers.SerializerMethodField()
+    fuel_payment = serializers.SerializerMethodField()
+    # totol_payment = serializers.SerializerMethodField()
+    age_entry = serializers.SerializerMethodField()
+    y_subsidy = serializers.SerializerMethodField()
+    total_subsidy_y = serializers.SerializerMethodField()
+    subsidyPosition = serializers.SerializerMethodField()
+    total_basic_income = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_8 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_5_5 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_8_5 = serializers.SerializerMethodField()
+    Deduct_into_the_welfare_fund_6 = serializers.SerializerMethodField()
+    total_regular_income = serializers.SerializerMethodField()
+    other_non_regular = serializers.SerializerMethodField()
+    total_income_before_tax = serializers.SerializerMethodField()
+    tax_exempt = serializers.SerializerMethodField()
+    calculate_taxes_0 = serializers.SerializerMethodField()
+    calculate_taxes_5 = serializers.SerializerMethodField()
+    calculate_taxes_10 = serializers.SerializerMethodField()
+    calculate_taxes_15 = serializers.SerializerMethodField()
+    calculate_taxes_20 = serializers.SerializerMethodField()
+    calculate_taxes_25 = serializers.SerializerMethodField()
+    tortal_tax = serializers.SerializerMethodField()
+    # tariff = serializers.SerializerMethodField()
+
+    def get_subsidyPosition(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        sp_id = SubsidyPosition.objects.filter(pos_id=employee.pos_id).first()
+        return sp_id.grant if sp_id else None
+ 
+    def get_age_entry(self, obj):
+        if not obj.emp_id:
+            return None
+        age_entry = Employee_lcic.objects.filter(emp_id=obj.emp_id.emp_id).first()
+        return age_entry.age_entry if age_entry else None
+    
+    def get_y_subsidy(self, obj):
+        age_entry = self.get_age_entry(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else None
+        except ValueError:
+            age_entry = None
+        if age_entry is not None and age_entry == 0:
+            return 0
+        if age_entry is not None and age_entry < 6:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=1).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 5 and age_entry < 16:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 15 and age_entry < 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=3).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0       
+
+        subsidy_year = SubsidyYear.objects.filter(sy_id=obj.sy_id).first()
+        return subsidy_year.y_subsidy if subsidy_year else 0
+
+    def get_total_subsidy_y(self, obj):
+        age_entry = self.get_age_entry(obj)
+        y_subsidy = self.get_y_subsidy(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else 0
+        except ValueError:
+            age_entry = 0
+        try:
+            y_subsidy = int(y_subsidy) if y_subsidy is not None else 0
+        except ValueError:
+            y_subsidy = 0
+        return age_entry * y_subsidy
+
+    def get_salary(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        salary = Salary.objects.filter(pos_id=employee.pos_id).first()
+        return salary.SalaryGrade if salary else None
+    
+    def get_total_ot(self, obj):
+        overtime = OvertimeWork.objects.filter(emp_id=obj.emp_id).first()
+        if not overtime:
+            return None
+        return overtime.total_ot if overtime.total_ot else 0
+
+    def get_salary_payment(self, obj):
+        subsidyPosition = self.get_subsidyPosition(obj) or 0
+        salary = self.get_salary(obj)
+        total_ot = self.get_total_ot(obj) 
+        total_subsidy_y = self.get_total_subsidy_y(obj) or 0
+        if salary is None:
+            return 0
+        if total_ot is None:
+            total_ot = 0
+        return math.ceil(float(salary) + float(total_ot)+ float(total_subsidy_y)+ float(subsidyPosition or 0))
+    
+    # def get_totol_payment(self, obj):
+    #     total_fuel = self.get_fuel_payment(obj) or 0
+    #     salary_payment = self.get_salary_payment(obj) or 0
+    #     return math.ceil(float(total_fuel)+ float(salary_payment))
+
+    def get_fuel_payment(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return 0
+        fuel_payment = FuelSubsidy.objects.filter(pos_id=employee.pos_id).first()
+        return fuel_payment.total_fuel if fuel_payment and fuel_payment.total_fuel else 0
+    
+    def get_total_basic_income(self, obj):
+        salary = self.get_salary(obj) or 0
+        subsidyPosition = self.get_subsidyPosition(obj) or 0
+        total_subsidy_y = self.get_total_subsidy_y(obj) or 0
+        total_ot = self.get_total_ot(obj) or 0
+        return math.ceil(float(salary) + float(subsidyPosition) + float(total_subsidy_y)+ float(total_ot))
+    
+    def get_total_regular_income(self, obj):
+        total_basic_income = self.get_total_basic_income(obj) or 0
+        fuel_payment = self.get_fuel_payment(obj) or 0
+        return math.ceil(float(total_basic_income) + float(fuel_payment))
+    
+    def get_other_non_regular(self, obj):
+        col = col_policy.objects.filter(emp_id=obj.emp_id).order_by('-col_id').first()
+        if not col:
+            return 0.0
+        # ดึง job_mobility ตามตำแหน่ง
+        jm = job_mobility.objects.filter(pos_id=obj.emp_id.pos_id).order_by('-date').first()
+        if not jm:
+            return 0.0
+        # คำนวณเหมือนใน col_policySerializer
+        total_amount = (jm.number_of_days or 0) * (jm.amount_per_day or 0)
+        total_payment = total_amount + (jm.jm_policy or 0)
+        return total_payment
+     
+    def get_total_income_before_tax(self, obj):
+        total_regular_income = self.get_total_regular_income(obj) or 0
+        other_non_regular = self.get_other_non_regular(obj) or 0
+        return math.ceil(float(total_regular_income) + float(other_non_regular))   
+    
+    def get_calculate_taxes_0(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj)
+        if income_before_tax <= Decimal('1300000.00'):
+            return 0 
+        tariff1 = income_tax.objects.filter(tax_id=1).first()
+        return tariff1.tariff if tariff1 else 0
+        
+    def get_calculate_taxes_5(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj) or Decimal('0')
+        if income_before_tax > Decimal('1300000.00') and income_before_tax <= Decimal('5000000.00'):
+            tariff1 = income_tax.objects.filter(tax_id=1).first()
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            return (income_before_tax - tariff1.calculation_base) * tariff2.tariff  if tariff2 else Decimal('0')
+        if Decimal('5000000.00') < income_before_tax :
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            if tariff2:
+                return (tariff2.calculation_base * tariff2.tariff)
+            return Decimal('0')
+
+    def get_calculate_taxes_10(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj) or Decimal('0')
+        if income_before_tax > Decimal('5000000.00') and income_before_tax <= Decimal('15000000.00'):
+            tariff1 = income_tax.objects.filter(tax_id=1).first()
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            return (income_before_tax - (tariff1.calculation_base + tariff2.calculation_base)) * tariff3.tariff if tariff3 else Decimal('0')
+        if Decimal('10000000.00') < income_before_tax :
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            if tariff3:
+                return (tariff3.calculation_base * tariff3.tariff)
+            return Decimal('0')
+
+    def get_calculate_taxes_15(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj) or Decimal('0')
+        if income_before_tax > Decimal('15000000.00') and income_before_tax <= Decimal('25000000.00'):
+            tariff1 = income_tax.objects.filter(tax_id=1).first()
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            return (income_before_tax - (tariff1.calculation_base + tariff2.calculation_base + tariff3.calculation_base)) * tariff4.tariff  if tariff4 else Decimal('0')
+        if Decimal('10000000.00') < income_before_tax :
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            if tariff4 and tariff4:
+                return (tariff4.calculation_base * tariff4.tariff)
+            return Decimal('0')
+        
+    def get_calculate_taxes_20(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj) or Decimal('0')
+        if income_before_tax > Decimal('25000000.00') and income_before_tax <= Decimal('65000000.00'):
+            tariff1 = income_tax.objects.filter(tax_id=1).first()
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            return (income_before_tax - (tariff1.calculation_base + tariff2.calculation_base + tariff3.calculation_base + tariff4.calculation_base)) *tariff5.tariff  if tariff5 else Decimal('0')
+        if Decimal('25000000.00') < income_before_tax :
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            if tariff5:
+                return (tariff5.calculation_base * tariff5.tariff)
+            return Decimal('0')
+    
+    def get_calculate_taxes_25(self, obj):
+        income_before_tax = self.get_total_income_before_tax(obj) or Decimal('0')
+        if income_before_tax > Decimal('65000000.00'):
+            tariff1 = income_tax.objects.filter(tax_id=1).first()
+            tariff2 = income_tax.objects.filter(tax_id=2).first()
+            tariff3 = income_tax.objects.filter(tax_id=3).first()
+            tariff4 = income_tax.objects.filter(tax_id=4).first()
+            tariff5 = income_tax.objects.filter(tax_id=5).first()
+            tariff6 = income_tax.objects.filter(tax_id=6).first()
+            return (income_before_tax - (tariff1.calculation_base + tariff2.calculation_base + tariff3.calculation_base + tariff4.calculation_base + tariff5.calculation_base)) * tariff6.tariff if tariff6 else Decimal('0')
+
+    def get_tortal_tax(self, obj):
+        tax_0 = self.get_calculate_taxes_0(obj) or Decimal('0')
+        tax_5 = self.get_calculate_taxes_5(obj) or Decimal('0')
+        tax_10 = self.get_calculate_taxes_10(obj) or Decimal('0')
+        tax_15 = self.get_calculate_taxes_15(obj) or Decimal('0')
+        tax_20 = self.get_calculate_taxes_20(obj) or Decimal('0')
+        tax_25 = self.get_calculate_taxes_25(obj) or Decimal('0')
+        return math.ceil(float(tax_0 + tax_5 + tax_10 + tax_15 + tax_20 + tax_25))
+
+    def get_tax_exempt(self, obj):
+        return 1300000
+    def get_Deduct_into_the_welfare_fund_8(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_5_5(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_8_5(self, obj):
+        return 0
+    def get_Deduct_into_the_welfare_fund_6(self, obj):
+        return 0
+    class Meta:
+        model = monthly_payment
+        fields = ["id",
+                  "date",
+                  "emp_id",
+                  "lao_name",
+                  "pos_id",
+                  "position",
+                  "salary",
+                  "Deduct_into_the_welfare_fund_8",
+                    "Deduct_into_the_welfare_fund_5_5",
+                    "Deduct_into_the_welfare_fund_8_5",
+                    "Deduct_into_the_welfare_fund_6",
+                  "subsidyPosition",
+                  "age_entry",
+                  "y_subsidy",
+                  "total_subsidy_y",
+                  "total_ot",
+                  "total_basic_income",
+                  "fuel_payment",
+                    "total_regular_income",
+                    "other_non_regular",
+                    "total_income_before_tax",
+                    "tax_exempt",
+                    "calculate_taxes_0",
+                    "calculate_taxes_5",
+                    "calculate_taxes_10",
+                    "calculate_taxes_15",
+                    "calculate_taxes_20",
+                    "calculate_taxes_25",
+                    "tortal_tax",
+                  "salary_payment"
+                  
+                  ]
+        
+
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import monthly_payment, Employee_lcic, SubsidyPosition, SubsidyYear, Salary, OvertimeWork, FuelSubsidy, Saving_cooperative, income_tax, job_mobility, col_policy
+from .serializers import monthly_paymentSerializer1
+import math
+from decimal import Decimal
+
+class MonthlyPaymentDetailView(APIView):
+
+    def get_tax_amount(self, income, tax_id, prev_base):
+        tier = income_tax.objects.filter(tax_id=tax_id).first()
+        return (income - prev_base) * tier.tariff if tier else 0
+
+    def compute_payment_data(self, obj):
+        emp = obj.emp_id
+        pos = emp.pos_id
+
+        salary_obj = Salary.objects.filter(pos_id=pos).first()
+        salary = salary_obj.SalaryGrade if salary_obj and salary_obj.SalaryGrade else 0
+
+        subsidy_pos = SubsidyPosition.objects.filter(pos_id=pos).first()
+        subsidy_position = subsidy_pos.grant if subsidy_pos and subsidy_pos.grant else 0
+
+        emp_info = Employee_lcic.objects.filter(emp_id=emp.emp_id).first()
+        age_entry = int(emp_info.age_entry) if emp_info and emp_info.age_entry else 0
+
+        # y_subsidy
+        if age_entry == 0:
+            y_subsidy = 0
+        elif age_entry < 6:
+            y_subsidy = SubsidyYear.objects.filter(sy_id=1).first()
+            y_subsidy = y_subsidy.y_subsidy if y_subsidy and y_subsidy.y_subsidy else 0
+        elif age_entry < 26:
+            y_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            y_subsidy = y_subsidy.y_subsidy if y_subsidy and y_subsidy.y_subsidy else 0
+        else:
+            y_subsidy = SubsidyYear.objects.filter(sy_id=3).first()
+            y_subsidy = y_subsidy.y_subsidy if y_subsidy and y_subsidy.y_subsidy else 0
+
+        total_subsidy_y = age_entry * y_subsidy
+
+        overtime = OvertimeWork.objects.filter(emp_id=emp).first()
+        total_ot = overtime.total_ot if overtime and overtime.total_ot else 0
+
+        fuel_payment = FuelSubsidy.objects.filter(pos_id=pos).first()
+        fuel = fuel_payment.total_fuel if fuel_payment and fuel_payment.total_fuel else 0
+
+        # ✅ Convert all to Decimal safely
+        salary = Decimal(salary)
+        subsidy_position = Decimal(subsidy_position)
+        total_subsidy_y = Decimal(total_subsidy_y)
+        total_ot = Decimal(total_ot)
+        fuel = Decimal(fuel)
+
+        total_basic_income = salary + subsidy_position + total_subsidy_y + total_ot
+        total_regular_income = total_basic_income + fuel
+
+        # Other non regular
+        col = col_policy.objects.filter(emp_id=emp).first()
+        jm = job_mobility.objects.filter(pos_id=pos).order_by('-date').first()
+        other_non_regular = Decimal('0')
+        if col and jm:
+            total_amount = Decimal(jm.number_of_days or 0) * Decimal(jm.amount_per_day or 0)
+            other_non_regular = total_amount + Decimal(jm.jm_policy or 0)
+
+        total_income_before_tax = total_regular_income + other_non_regular
+
+        tax_total = Decimal('0')
+        if total_income_before_tax > 1300000:
+            if total_income_before_tax <= 5000000:
+                tax_total += self.get_tax_amount(total_income_before_tax, 2, 1300000)
+            elif total_income_before_tax <= 15000000:
+                tax_total += self.get_tax_amount(5000000, 2, 1300000)
+                tax_total += self.get_tax_amount(total_income_before_tax, 3, 5000000)
+            elif total_income_before_tax <= 25000000:
+                tax_total += self.get_tax_amount(5000000, 2, 1300000)
+                tax_total += self.get_tax_amount(15000000, 3, 5000000)
+                tax_total += self.get_tax_amount(total_income_before_tax, 4, 15000000)
+            elif total_income_before_tax <= 65000000:
+                tax_total += self.get_tax_amount(5000000, 2, 1300000)
+                tax_total += self.get_tax_amount(15000000, 3, 5000000)
+                tax_total += self.get_tax_amount(25000000, 4, 15000000)
+                tax_total += self.get_tax_amount(total_income_before_tax, 5, 25000000)
+            else:
+                tax_total += self.get_tax_amount(5000000, 2, 1300000)
+                tax_total += self.get_tax_amount(15000000, 3, 5000000)
+                tax_total += self.get_tax_amount(25000000, 4, 15000000)
+                tax_total += self.get_tax_amount(65000000, 5, 25000000)
+                tax_total += self.get_tax_amount(total_income_before_tax, 6, 65000000)
+
+        total_basic_income_after_tax = total_basic_income - tax_total
+        total_income_after_tax = total_income_before_tax - tax_total
+
+        child_subsidy = Decimal(obj.child or 0) * Decimal(obj.child_Subsidy or 0)
+
+        saving = Saving_cooperative.objects.filter(emp_id=emp).first()
+        loan = Decimal(saving.loan_amount or 0) if saving else Decimal('0')
+        interest = Decimal(saving.interest or 0) if saving else Decimal('0')
+        deposit = Decimal(saving.deposit or 0) if saving else Decimal('0')
+        loan_deduct_194 = Decimal(saving.Loan_deduction_194 or 0) if saving else Decimal('0')
+        total_saving = loan + interest + deposit
+
+        computed = {
+            "salary": float(salary),
+            "subsidyPosition": float(subsidy_position),
+            "age_entry": age_entry,
+            "y_subsidy": float(y_subsidy),
+            "total_subsidy_y": float(total_subsidy_y),
+            "total_ot": float(total_ot),
+            "fuel_payment": float(fuel),
+            "total_basic_income": float(total_basic_income),
+            "total_regular_income": float(total_regular_income),
+            "other_non_regular": float(other_non_regular),
+            "total_income_before_tax": float(total_income_before_tax),
+            "tortal_tax": math.ceil(tax_total),
+            "total_basic_income_after_tax": math.ceil(total_basic_income_after_tax),
+            "total_income_after_tax": math.ceil(total_income_after_tax),
+            "total_child_Subsidy": math.ceil(child_subsidy),
+            "loan": float(loan),
+            "interest": float(interest),
+            "deposit": float(deposit),
+            "Loan_deduction_194": float(loan_deduct_194),
+            "total_Saving_cooperative": float(total_saving),
+            "salary_payment": math.ceil(total_basic_income_after_tax),
+        }
+
+        base = monthly_paymentSerializer1(obj).data
+        return {**base, **computed}
+
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                obj = monthly_payment.objects.select_related('emp_id__pos_id').get(pk=pk)
+            except monthly_payment.DoesNotExist:
+                return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            return Response(self.compute_payment_data(obj))
+        else:
+            queryset = monthly_payment.objects.select_related('emp_id__pos_id').all()
+            results = [self.compute_payment_data(obj) for obj in queryset]
+            return Response(results)
+
+    path('monthly-payment/', MonthlyPaymentDetailView.as_view()),
+    path('monthly-payment/<int:pk>/', MonthlyPaymentDetailView.as_view()),
+
+class monthly_paymentSerializer1(serializers.ModelSerializer):
+    class Meta:
+        model = monthly_payment
+        fields = [
+            "id", "date", "emp_id", "child", "child_Subsidy", "health_Subsidy"
+        ]

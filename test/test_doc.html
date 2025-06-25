@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Document LCIC Table</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .truncate-tooltip {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
+    .truncate-tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #1e3a8a;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 20;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="bg-blue-50 min-h-screen p-6 font-sans">
+  <div class="container mx-auto max-w-7xl">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-2 sm:space-y-0">
+      <h1 class="text-3xl font-bold text-blue-900">Document LCIC Records</h1>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <input type="text" id="searchInput" placeholder="🔍 Search..." class="border px-3 py-2 rounded-md w-full max-w-xs">
+        <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div id="loadingSpinner" class="hidden absolute inset-0 bg-blue-100 bg-opacity-50 flex justify-center items-center z-30">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+      </div>
+      <div class="overflow-x-auto max-h-[70vh] border border-blue-200 rounded-lg shadow-xl">
+        <table class="min-w-full bg-white divide-y divide-blue-200 text-sm">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Doc ID</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Insert Date</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Doc Number</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Subject</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Format</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Doc Type</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Doc Type Info</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">File</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Department</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Detail</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Name</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Departments Into</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Statuses</th>
+              <th class="py-3 px-4 text-left font-semibold uppercase">Status 2</th>
+            </tr>
+          </thead>
+          <tbody id="documentTable" class="divide-y divide-blue-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tableBody = document.getElementById('documentTable');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const serverIP = "192.168.45.52";
+    const port = "8000";
+
+    async function fetchDocumentData() {
+      try {
+        loadingSpinner.classList.remove('hidden');
+        const response = await fetch(`http://${serverIP}:${port}/api/list/document_lcic/`);
+        const data = await response.json();
+        tableBody.innerHTML = '';
+
+        const documents = Array.isArray(data) ? data : [data];
+
+        documents.forEach((doc, index) => {
+          const row = document.createElement('tr');
+          row.className = index % 2 === 0 ? 'bg-white' : 'bg-blue-50';
+
+          const insertDate = doc.insert_date ? new Date(doc.insert_date).toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true
+          }) : '';
+
+          const fullFileURL = doc.file ? `http://${serverIP}:${port}${doc.file}` : null;
+          const ext = fullFileURL ? fullFileURL.split('.').pop().toLowerCase() : '';
+          let fileLinks = 'No File';
+
+          if (fullFileURL) {
+            if (ext === 'pdf') {
+              fileLinks = `
+                <div class="flex flex-col">
+                  <a href="${fullFileURL}" target="_blank" class="text-blue-600 hover:underline">📄 View PDF</a>
+                  <a href="${fullFileURL}" download class="text-blue-600 hover:underline">⬇️ Download</a>
+                </div>`;
+            } else if (['doc', 'docx'].includes(ext)) {
+              fileLinks = `
+                <div class="flex flex-col">
+                  <a href="ms-word:ofe|u|${fullFileURL}" class="text-blue-600 hover:underline">📝 Open in Word</a>
+                  <a href="${fullFileURL}" download class="text-blue-600 hover:underline">⬇️ Download</a>
+                </div>`;
+            } else {
+              fileLinks = `<a href="${fullFileURL}" target="_blank" class="text-blue-600 hover:underline">📁 View File</a>`;
+            }
+          }
+
+          const departmentsInto = Array.isArray(doc.department_into) ? doc.department_into.map(d => d.name).join(', ') : '';
+          const statuses = Array.isArray(doc.status) ? doc.status.map(s => s.name).join(', ') : '';
+
+          row.innerHTML = `
+            <td class="py-3 px-4 text-blue-900">${doc.doc_id || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${insertDate}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.doc_number || ''}</td>
+            <td class="truncate-tooltip px-4 text-blue-900" data-tooltip="${doc.subject || ''}">${doc.subject || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.format?.name || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.doc_type || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.doc_type_info || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${fileLinks}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.department?.name || ''}</td>
+            <td class="truncate-tooltip px-4 text-blue-900" data-tooltip="${doc.document_detail || ''}">${doc.document_detail || ''}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.name || ''}</td>
+            <td class="truncate-tooltip px-4 text-blue-900" data-tooltip="${departmentsInto}">${departmentsInto}</td>
+            <td class="truncate-tooltip px-4 text-blue-900" data-tooltip="${statuses}">${statuses}</td>
+            <td class="py-3 px-4 text-blue-900">${doc.status2 || ''}</td>
+          `;
+
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error loading documents:', error);
+        alert('Failed to load document data.');
+      } finally {
+        loadingSpinner.classList.add('hidden');
+      }
+    }
+
+    refreshBtn.addEventListener('click', fetchDocumentData);
+
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+      const keyword = e.target.value.toLowerCase();
+      const rows = tableBody.querySelectorAll('tr');
+      rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+      });
+    });
+
+    window.onload = fetchDocumentData;
+  </script>
+</body>
+</html>

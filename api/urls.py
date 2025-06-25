@@ -18,7 +18,7 @@ from .views import FuelSubsidyView
 from .views import reset_all_overtimes
 from .views import Overtime_historyView, colpolicy_historyView, fuel_payment_historyView
 from .views import (
-    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,monthly_paymentViewSet,
+    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,monthly_paymentViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,
     SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,
     SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet
 )
@@ -29,10 +29,12 @@ router.register(r'sal', SalaryViewSet)
 router.register(r'sp', SubsidyPositionViewSet)
 router.register(r'sy', SubsidyYearViewSet)
 router.register(r'apg', AnnualPerformanceGrantViewSet)
-router.register(r'sdg', SpecialDayGrantViewSet)
+router.register(r'sdg', SpecialDayGrantViewSet, basename='specialday-position')
+router.register(r'sdg_emp', SpecialDay_empViewSet,basename='specialday-emp')
 router.register(r'mps', MobilePhoneSubsidyViewSet)
 router.register(r'col_policy', col_policyViewSet)
 router.register(r'income_tax', income_taxViewSet)
+router.register(r'sc', Saving_cooperativeViewSet)
 # router.register(r'ot', OvertimeWorkViewSet)
 router.register(r'mon_ly', monthly_paymentViewSet)
 from .views import get_position_details
