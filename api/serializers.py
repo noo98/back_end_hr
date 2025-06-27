@@ -427,7 +427,8 @@ class Specialday_empserialiser(serializers.ModelSerializer):
                 specials = SpecialDay_Position.objects.filter(pos_id=employee.pos_id).select_related("special_day")
                 return [
                     {
-                        "name": s.special_day.occasion_name,
+                        "sdg_id": s.special_day.sdg_id,
+                        "sdg_name": s.special_day.occasion_name,
                         "grant": s.grant
                     }
                     for s in specials if s.special_day

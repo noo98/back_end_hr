@@ -1915,3 +1915,47 @@ class fuel_payment_historyView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+    import os
+import requests
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+
+WEBDAV_URL = "http://192.168.45.52:8080/webdav/"
+WEBDAV_USERNAME = "your_username"
+WEBDAV_PASSWORD = "your_password"
+
+@csrf_exempt
+def upload_to_webdav(request):
+    if request.method == "POST" and request.FILES.get('file'):
+        uploaded_file = request.FILES['file']
+        filename = uploaded_file.name
+
+        # ເກັບໄຟລ໌ຊົ່ວຄາວກ່ອນ
+        temp_path = default_storage.save(f"temp/{filename}", uploaded_file)
+        full_temp_path = default_storage.path(temp_path)
+
+        try:
+            with open(full_temp_path, 'rb') as f:
+                response = requests.put(
+                    WEBDAV_URL + filename,
+                    data=f,
+                    auth=(WEBDAV_USERNAME, WEBDAV_PASSWORD)
+                )
+
+            if response.status_code in [200, 201, 204]:
+                return JsonResponse({'status': 'success', 'message': 'Uploaded to WebDAV successfully'})
+            else:
+                return JsonResponse({'status': 'error', 'message': f'WebDAV upload failed: {response.status_code}'}, status=500)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        finally:
+            # ລຶບໄຟລ໌ຊົ່ວຄາວ
+            if default_storage.exists(temp_path):
+                default_storage.delete(temp_path)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
