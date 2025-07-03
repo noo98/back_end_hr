@@ -1,54 +1,11 @@
 # Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.pyc
-
-# Virtual environment
 env/
 venv/
-ENV/
 .venv/
-*.egg-info/
-.eggs/
-
 # Django
-*.log
-*.pot
 *.sqlite3
 db.sqlite3
 media/
-staticfiles/
-static/
-
-# VSCode settings
-.vscode/
-
-# IDEs
-.idea/
-*.sublime-project
-*.sublime-workspace
-
 # OS generated files
-.DS_Store
-Thumbs.db
 
-# Migrations (ignore all but __init__.py)
-**/migrations/*.py
-!**/migrations/__init__.py
 
-# Environment variables
-.env
-.env.*
-
-# Coverage & testing
-htmlcov/
-coverage.xml
-*.cover
-.pytest_cache/
-.tox/
-
-# Build
-build/
-dist/
