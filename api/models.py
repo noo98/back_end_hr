@@ -15,7 +15,6 @@ def department_directory_path(instance, filename):
     name, ext = os.path.splitext(filename)
     ascii_name = unidecode(name)
     ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
-    ascii_name = ascii_name.strip('_').lower()
     return f'documents/{str(instance.department.id)}/{ascii_name}{ext}'
 
 def general_document_directory_path(instance, filename):
@@ -23,7 +22,6 @@ def general_document_directory_path(instance, filename):
     name, ext = os.path.splitext(filename)
     ascii_name = unidecode(name)
     ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
-    ascii_name = ascii_name.strip('_').lower()
     return f'documents_general/{str(instance.department.id)}/{ascii_name}{ext}'
 
 

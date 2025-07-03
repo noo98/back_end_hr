@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ເປີດໂປຣແກຣມ Word</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&display=swap" rel="stylesheet" />
+
+<style>
+  body {
+      font-family: 'Noto Sans Lao', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f0f2f5;
+      color: #333;
+  }
+  .container {
+      background-color: #fff;
+      padding: 40px 60px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+  }
+  h1 {
+      color: #2c3e50;
+      margin-bottom: 25px;
+      font-size: 2.2em;
+  }
+  p {
+      font-size: 1.1em;
+      line-height: 1.7;
+      margin-bottom: 30px;
+      color: #555;
+  }
+  .styled-button {
+      background-color: #062d58;
+      color: #fefdfd;
+      font-weight: bold;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      text-decoration: none;
+      display: inline-block;
+      user-select: none;
+  }
+  .styled-button:hover,
+  .styled-button:focus {
+      background-color: #e0a800;
+      transform: translateY(-2px);
+      outline: none;
+  }
+  .note {
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #777;
+      background-color: #e9ecef;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 5px solid #007bff;
+      text-align: left;
+      white-space: pre-line;
+  }
+  .error {
+      color: #d63333;
+      font-weight: bold;
+      margin-top: 20px;
+      display: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>ເປີດເອກະສານ Microsoft Word</h1>
+    <p>ກົດປຸ່ມສີຟ້າດ້ານລຸ່ມນີ້ ເພື່ອເປີດເອກະສານ Word ທີ່ລະບຸ.</p>
+
+    <a href="ms-word:ofe|u|\\\\192.168.45.52\\media\\documents\\2\\ຄຳຖາມ.docx" 
+       class="styled-button" id="openWordBtn" tabindex="0" aria-label="ເປີດເອກະສານ Word">
+       ເປີດເອກະສານ Word
+    </a>
+
+    <div class="note" role="note" aria-live="polite">
+        <strong>ສິ່ງສຳຄັນທີ່ຄວນຮູ້:</strong><br>
+        • ໂປຣແກຣມທ່ອງເວັບຂອງທ່ານຈະຂໍອະນຸຍາດເປີດແອັບພລິເຄຊັນພາຍນອກ (Microsoft Word).<br>
+        • ຟັງຊັນນີ້ຕ້ອງການໃຫ້ Microsoft Word ຕິດຕັ້ງຢູ່ໃນຄອມພິວເຕີຂອງທ່ານ.<br>
+        • ຄອມພິວເຕີຂອງທ່ານຈະຕ້ອງສາມາດເຂົ້າເຖິງເສັ້ນທາງເຄືອຂ່າຍ <strong>\\192.168.45.52\media\documents\2\</strong> ໄດ້.
+    </div>
+
+    <div id="errorMessage" class="error" role="alert" aria-live="assertive">
+        ບໍ່ສາມາດເປີດໄຟລ໌ໄດ້ ກະລຸນາກວດເບິ່ງການເຊື່ອມຕໍ່ເຄືອຂ່າຍ ແລະ ການຕິດຕັ້ງ Microsoft Word.
+    </div>
+</div>
+
+<script>
+  document.getElementById('openWordBtn').addEventListener('click', function(event) {
+    event.preventDefault(); // ປ້ອງກັນເລີ່ມປຸ່ມເປີດໂປຣແກຣມເລີຍທັນທີ
+
+    const errorMsg = document.getElementById('errorMessage');
+    errorMsg.style.display = 'none';
+
+    const startTime = Date.now();
+
+    // ເປີດໃຊ້ ms-word protocol ຜ່ານ href ຂອງລິ້ງ
+    window.location.href = this.href;
+
+    // ກວດເຊັກຫາວ່າໄດ້ມີການເປີດ Microsoft Word ຫຼັງ 3.5 ວິນາທີ
+    setTimeout(() => {
+      // ຖ້າເວລາແລ້ວນ້ອຍກວ່າ 4 ວິນາທີ, ຄິດວ່າບໍ່ສາມາດເປີດໄຟລ໌ໄດ້
+      if (Date.now() - startTime < 4000) {
+        errorMsg.style.display = 'block';
+      }
+    }, 3500);
+  });
+</script>
+
+</body>
+</html>
