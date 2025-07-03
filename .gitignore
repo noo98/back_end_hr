@@ -1,11 +1,10 @@
-
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.pyc
-**/migrations/*.py
+
 # Virtual environment
 env/
 venv/
@@ -17,7 +16,6 @@ ENV/
 # Django
 *.log
 *.pot
-*.pyc
 *.sqlite3
 db.sqlite3
 media/
@@ -39,9 +37,6 @@ Thumbs.db
 # Migrations (ignore all but __init__.py)
 **/migrations/*.py
 !**/migrations/__init__.py
-
-# Django settings
-**/settings.py
 
 # Environment variables
 .env
