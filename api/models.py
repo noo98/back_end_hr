@@ -6,11 +6,25 @@ from django.utils import timezone
 from decimal import Decimal
 from datetime import date, datetime
 import datetime
+import os
+from unidecode import unidecode
+from django.utils.timezone import now
+import re
 def department_directory_path(instance, filename):
-    return os.path.join('documents', str(instance.department.id), filename)
+    # return os.path.join('documents', str(instance.department.id), filename)
+    name, ext = os.path.splitext(filename)
+    ascii_name = unidecode(name)
+    ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
+    ascii_name = ascii_name.strip('_').lower()
+    return f'documents/{str(instance.department.id)}/{ascii_name}{ext}'
 
 def general_document_directory_path(instance, filename):
-    return os.path.join('documents_general', str(instance.department.id), filename)
+    # return os.path.join('documents_general', str(instance.department.id), filename)
+    name, ext = os.path.splitext(filename)
+    ascii_name = unidecode(name)
+    ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
+    ascii_name = ascii_name.strip('_').lower()
+    return f'documents_general/{str(instance.department.id)}/{ascii_name}{ext}'
 
 
 class SystemUser(models.Model):
@@ -55,8 +69,8 @@ class Employee_lcic(models.Model):
     def save(self, *args, **kwargs):
         if self.year_entry:
             try:
-                entry_date = datetime.strptime(self.year_entry, "%Y-%m-%d").date()
-                today = date.today()
+                entry_date = datetime.datetime.strptime(self.year_entry, "%Y-%m-%d").date()
+                today = datetime.date.today()
                 delta = today - entry_date
                 years = delta.days // 365
                 # months = (delta.days % 365) // 30

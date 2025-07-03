@@ -20,7 +20,7 @@ from .views import Overtime_historyView, colpolicy_historyView, fuel_payment_his
 from .views import (
     PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,monthly_paymentViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,
     SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,
-    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet
+    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet,SpecialDayViewSet,SpecialDayPositionFilterAPIView
 )
 router = DefaultRouter()
 router.register(r'positions', PositionViewSet)
@@ -31,6 +31,7 @@ router.register(r'sy', SubsidyYearViewSet)
 router.register(r'apg', AnnualPerformanceGrantViewSet)
 router.register(r'sdg', SpecialDayGrantViewSet, basename='specialday-position')
 router.register(r'sdg_emp', SpecialDay_empViewSet,basename='specialday-emp')
+router.register(r'sd', SpecialDayViewSet, basename='specialday')
 router.register(r'mps', MobilePhoneSubsidyViewSet)
 router.register(r'col_policy', col_policyViewSet)
 router.register(r'income_tax', income_taxViewSet)
@@ -127,5 +128,7 @@ urlpatterns = [
 
     path('fuel_history/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_list'),
     path('fuel_history/<int:emp_id>/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_detail'),
+
+    path('sdg_filter/', SpecialDayPositionFilterAPIView.as_view(), name='specialday-filter'),
 
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

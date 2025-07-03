@@ -412,10 +412,11 @@ class SpecialDayGrantSerializer(serializers.ModelSerializer):
         fields = '__all__'
 class Specialday_PositionSerializer(serializers.ModelSerializer):
     pos_name = serializers.CharField(source='pos_id.name', read_only=True)
+    sdg_id = serializers.IntegerField(source='special_day.sdg_id', read_only=True)
     special_day = serializers.CharField(source='special_day.occasion_name', read_only=True)
     class Meta:
         model = SpecialDay_Position
-        fields = ['id','special_day','pos_name','grant']
+        fields = ['id','sdg_id','special_day','pos_name','grant']
 
 class Specialday_empserialiser(serializers.ModelSerializer):
     pos_name = serializers.CharField(source='pos_id.name', read_only=True)

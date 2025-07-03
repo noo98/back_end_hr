@@ -146,7 +146,7 @@ class document_lcic_deleteView(APIView):
     def delete(self, request, doc_id):
         try:
             document = document_lcic.objects.get(doc_id=doc_id)
-            if document.file:  # ສັນດານເວລາຂຽນ Model ໄຟລ໌ຈະມີຊື່ field ວ່າ file_field
+            if document.file:  
                 file_path = os.path.join(settings.MEDIA_ROOT, document.file .name)
                 if os.path.exists(file_path):
                     os.remove(file_path)
@@ -530,7 +530,7 @@ class document_lcic_SearchView(APIView):
         format_name = request.query_params.get('format', None)
 
         # Initialize the base query
-        documents = document_lcic.objects.all()
+        documents = document_lcic.objects.all().order_by('-doc_id')
 
         # Apply search filters
         if search_query:
@@ -589,7 +589,7 @@ class document_general_SearchView(APIView):
         status_doc = request.query_params.get("status_doc", None)  # ເພີ່ມ filter ສະຖານະເອກະສານ
 
         # ເລີ່ມຕົ້ນ Query ສໍາລັບຄົ້ນຫາ
-        documents = document_general.objects.all()
+        documents = document_general.objects.all().order_by('-docg_id')  # ສະແດງຈາກ ID ສູງຫາຕ່ຳ
 
         if search_query:
             documents = documents.filter(subject__icontains=search_query)
@@ -1503,12 +1503,46 @@ class AnnualPerformanceGrantViewSet(viewsets.ModelViewSet):
     queryset = AnnualPerformanceGrant.objects.all()
     serializer_class = AnnualPerformanceGrantSerializer
 
+class SpecialDayViewSet(viewsets.ModelViewSet):
+    queryset = SpecialDayGrant.objects.all().order_by('sdg_id')
+    serializer_class = SpecialDayGrantSerializer
 class SpecialDayGrantViewSet(viewsets.ModelViewSet):
     queryset = SpecialDay_Position.objects.all().order_by('special_day','pos_id')
     serializer_class = Specialday_PositionSerializer
 class SpecialDay_empViewSet(viewsets.ModelViewSet):
     queryset = Employee_lcic.objects.all().order_by('pos_id')
     serializer_class = Specialday_empserialiser
+class SpecialDayPositionFilterAPIView(APIView):
+    def get(self, request):
+        sdg_id = request.query_params.get('sdg_id')
+        special_day = request.query_params.get('special_day')  # occasion_name
+        pos_name = request.query_params.get('pos_name')
+        pos_id = request.query_params.get('pos_id')
+        min_grant = request.query_params.get('min_grant')
+
+        queryset = SpecialDay_Position.objects.select_related('special_day', 'pos_id').all().order_by('special_day', 'pos_id')
+
+        if sdg_id:
+            queryset = queryset.filter(special_day__sdg_id=sdg_id)
+
+        if special_day:
+            queryset = queryset.filter(special_day__occasion_name__icontains=special_day)
+
+        if pos_name:
+            queryset = queryset.filter(pos_id__name__icontains=pos_name)
+
+        if pos_id:
+            queryset = queryset.filter(pos_id=pos_id)
+
+        if min_grant:
+            try:
+                min_grant = float(min_grant)
+                queryset = queryset.filter(grant__gte=min_grant)
+            except ValueError:
+                return Response({'error': 'Invalid grant value'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = Specialday_PositionSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MobilePhoneSubsidyViewSet(viewsets.ModelViewSet):
@@ -1959,3 +1993,4 @@ def upload_to_webdav(request):
                 default_storage.delete(temp_path)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+

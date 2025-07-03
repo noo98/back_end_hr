@@ -97,30 +97,48 @@
           const row = document.createElement('tr');
           row.className = index % 2 === 0 ? 'bg-white' : 'bg-blue-50';
 
-          const insertDate = doc.insert_date ? new Date(doc.insert_date).toLocaleString('en-GB', {
-            day: '2-digit', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit', hour12: true
-          }) : '';
+          // Improved insertDate parsing: support ISO, dd-mm-yyyy, dd/mm/yyyy
+          let insertDate = '';
+          if (doc.insert_date) {
+            let dateObj;
+            if (/\d{4}-\d{2}-\d{2}/.test(doc.insert_date)) {
+              dateObj = new Date(doc.insert_date);
+            } else if (/\d{2}-\d{2}-\d{4}/.test(doc.insert_date)) {
+              const [day, month, year] = doc.insert_date.split('-');
+              dateObj = new Date(`${year}-${month}-${day}`);
+            } else if (/\d{2}\/\d{2}\/\d{4}/.test(doc.insert_date)) {
+              const [day, month, year] = doc.insert_date.split('/');
+              dateObj = new Date(`${year}-${month}-${day}`);
+            }
+            if (dateObj && !isNaN(dateObj)) {
+              insertDate = dateObj.toLocaleString('en-GB', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+              });
+            } else {
+              insertDate = doc.insert_date;
+            }
+          }
 
-          const fullFileURL = doc.file ? `http://${serverIP}:${port}${doc.file}` : null;
-          const ext = fullFileURL ? fullFileURL.split('.').pop().toLowerCase() : '';
+          const decodedPath = decodeURI(doc.file);
+          const fileName = decodedPath.split('/').pop();
+          const ext = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+          const encodedPath = encodeURIComponent(decodedPath).replace(/%2F/g, '/');
+          const fullFileURL = `file://${serverIP}${encodedPath}`;
+          const fullFilePDF = doc.file ? `http://${serverIP}:${port}${doc.file}` : null;
+
           let fileLinks = 'No File';
 
-          if (fullFileURL) {
+          if (doc.file && fileName && ext) {
             if (ext === 'pdf') {
+              fileLinks = `<a href="${fullFilePDF}" target="_blank" class="text-blue-600 hover:underline">📄 ${fileName}</a>`;
+            } else if (["doc", "docx"].includes(ext)) {
               fileLinks = `
                 <div class="flex flex-col">
-                  <a href="${fullFileURL}" target="_blank" class="text-blue-600 hover:underline">📄 View PDF</a>
-                  <a href="${fullFileURL}" download class="text-blue-600 hover:underline">⬇️ Download</a>
-                </div>`;
-            } else if (['doc', 'docx'].includes(ext)) {
-              fileLinks = `
-                <div class="flex flex-col">
-                  <a href="ms-word:ofe|u|${fullFileURL}" class="text-blue-600 hover:underline">📝 Open in Word</a>
-                  <a href="${fullFileURL}" download class="text-blue-600 hover:underline">⬇️ Download</a>
+                 <a href="ms-word:ofe|u|${fullFileURL}" class="text-blue-600 hover:underline">📝 ເປີດໃນ Word</a>
                 </div>`;
             } else {
-              fileLinks = `<a href="${fullFileURL}" target="_blank" class="text-blue-600 hover:underline">📁 View File</a>`;
+              fileLinks = `<a href="${fullFileURL}" target="_blank" class="text-blue-600 hover:underline">📁 ${fileName}</a>`;
             }
           }
 
@@ -153,6 +171,7 @@
         loadingSpinner.classList.add('hidden');
       }
     }
+
 
     refreshBtn.addEventListener('click', fetchDocumentData);
 
