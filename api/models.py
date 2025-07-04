@@ -13,16 +13,20 @@ import re
 def department_directory_path(instance, filename):
     # return os.path.join('documents', str(instance.department.id), filename)
     name, ext = os.path.splitext(filename)
-    ascii_name = unidecode(name)
-    ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
-    return f'documents/{str(instance.department.id)}/{ascii_name}{ext}'
+    if ext.lower() == '.docx':
+        ascii_name = unidecode(name)
+        ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
+        name = ascii_name
+    return f'documents/{str(instance.department.id)}/{name}{ext}'
 
 def general_document_directory_path(instance, filename):
     # return os.path.join('documents_general', str(instance.department.id), filename)
     name, ext = os.path.splitext(filename)
-    ascii_name = unidecode(name)
-    ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
-    return f'documents_general/{str(instance.department.id)}/{ascii_name}{ext}'
+    if ext.lower() == '.docx':
+        ascii_name = unidecode(name)
+        ascii_name = re.sub(r'[^a-zA-Z0-9]+', '_', ascii_name)
+        name = ascii_name
+    return f'documents_general/{str(instance.department.id)}/{name}{ext}'
 
 
 class SystemUser(models.Model):

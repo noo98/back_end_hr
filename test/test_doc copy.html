@@ -81,7 +81,8 @@
     const tableBody = document.getElementById('documentTable');
     const loadingSpinner = document.getElementById('loadingSpinner');
     const refreshBtn = document.getElementById('refreshBtn');
-    const serverIP = "192.168.45.52";
+    // const serverIP = "192.168.45.52";
+    const serverIP = '192.168.45.52'; // Or however you define your server IP
     const port = "8000";
 
     async function fetchDocumentData() {
@@ -102,7 +103,7 @@
             hour: '2-digit', minute: '2-digit', hour12: true
           }) : '';
 
-          const fullFileURL = doc.file ? `http://${serverIP}:${port}${doc.file}` : null;
+          const fullFileURL = doc.file ? `\\\\${serverIP}\\${doc.file.replace(/\//g, '\\')}` : null;
           const ext = fullFileURL ? fullFileURL.split('.').pop().toLowerCase() : '';
           let fileLinks = 'No File';
 
