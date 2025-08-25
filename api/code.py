@@ -1,5 +1,43 @@
 from django.db import models
 #ຂໍ້ມູນບຸກຄົນ
+    # def get(self, request):
+    #     # ດຶງຂໍ້ມູນທັງໝົດ
+    #     Document = Document_Status.objects.all()
+    #     # ແປງຂໍ້ມູນໃຊ້ Serializer
+    #     serializer = DocStatusSerializer(Document, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # def post(self, request):
+    #         # ສະແດງຂໍ້ມູນ request ທີ່ໄດ້ຮັບ
+    #         print("Request Data:", request.data)
+
+    #         doc_id = request.data.get("doc_id")
+    #         us_id = request.data.get("us_id")
+
+    #         if not doc_id or not us_id:
+    #             return Response({"error": "doc_id ແລະ us_id ຕ້ອງມີຄ່າ"}, status=status.HTTP_400_BAD_REQUEST)
+
+    #         try:
+    #             # ໃຊ້ update_or_create ເພື່ອປ່ຽນແປງຂໍ້ມູນຖ້າມີຢູ່ແລ້ວ
+    #             document_status, created = Document_Status.objects.update_or_create(
+    #                 doc_id_id=doc_id,  # ForeignKey ຕ້ອງໃຊ້ _id
+    #                 us_id_id=us_id,
+    #             )
+
+    #             serializer = DocStatusSerializer(document_status)
+    #             if created:
+    #                 return Response(serializer.data, status=status.HTTP_201_CREATED)  # ຖືກສ້າງໃໝ່
+    #             else:
+    #                 return Response(serializer.data, status=status.HTTP_200_OK)  # ຖືກອັບເດດ
+
+    #         except IntegrityError:
+    #             return Response(
+    #                 {"error": "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້"},
+    #                 status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 class PersonalInformation(models.Model):
     per_id = models.AutoField(primary_key=True)  # ລະຫັດຂໍ້ມູນບຸກຄົນ
     full_name = models.CharField(max_length=255)  # ຊື່ເຕັມ
@@ -1286,3 +1324,545 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
         fields = [
             "id", "date", "emp_id", "child", "child_Subsidy", "health_Subsidy"
         ]
+
+
+
+
+
+
+class monthly_paymentSerializer(serializers.ModelSerializer):
+    lao_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    salary = serializers.SerializerMethodField()
+    ot = serializers.SerializerMethodField()
+    net_salary = serializers.SerializerMethodField()
+    fuel = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
+    year_subsidy = serializers.SerializerMethodField()
+    year_subsidy_total = serializers.SerializerMethodField()
+    position_subsidy = serializers.SerializerMethodField()
+    basic_income = serializers.SerializerMethodField()
+    wf_8 = serializers.SerializerMethodField()
+    wf_5_5 = serializers.SerializerMethodField()
+    wf_8_5 = serializers.SerializerMethodField()
+    wf_6 = serializers.SerializerMethodField()
+    unknown_1 = serializers.SerializerMethodField()
+    unknown_2 = serializers.SerializerMethodField()
+    unknown_3 = serializers.SerializerMethodField()
+    unknown_4 = serializers.SerializerMethodField()
+    unknown_5 = serializers.SerializerMethodField()
+    unknown_6 = serializers.SerializerMethodField()
+    unknown_7 = serializers.SerializerMethodField()
+    regular_income = serializers.SerializerMethodField()
+    other_income = serializers.SerializerMethodField()
+    income_before_tax = serializers.SerializerMethodField()
+    exempt = serializers.SerializerMethodField()
+    tax_5 = serializers.SerializerMethodField()
+    tax_10 = serializers.SerializerMethodField()
+    tax_15 = serializers.SerializerMethodField()
+    tax_20 = serializers.SerializerMethodField()
+    tax_25 = serializers.SerializerMethodField()
+    total_tax = serializers.SerializerMethodField()
+    net_basic_income = serializers.SerializerMethodField()
+    child_subsidy_total = serializers.SerializerMethodField()
+    saving_total = serializers.SerializerMethodField()
+    loan = serializers.SerializerMethodField()
+    interest = serializers.SerializerMethodField()
+    deposit = serializers.SerializerMethodField()
+    loan_194 = serializers.SerializerMethodField()
+    monthly_income = serializers.SerializerMethodField()
+
+    def get_position_subsidy(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        sp_id = SubsidyPosition.objects.filter(pos_id=employee.pos_id).first()
+        return sp_id.grant if sp_id else None
+
+    def get_age(self, obj):
+        if not obj.emp_id:
+            return None
+        age_entry = Employee_lcic.objects.filter(emp_id=obj.emp_id.emp_id).first()
+        return age_entry.age_entry if age_entry else None
+    def get_year_subsidy(self, obj):
+        age_entry = self.get_age(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else None
+        except ValueError:
+            age_entry = None
+        if age_entry is not None and age_entry == 0:
+            return 0
+        if age_entry is not None and age_entry < 6:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=1).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry < 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=2).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+        if age_entry is not None and age_entry > 26:
+            default_subsidy = SubsidyYear.objects.filter(sy_id=3).first()
+            return default_subsidy.y_subsidy if default_subsidy else 0
+
+        subsidy_year = SubsidyYear.objects.filter(sy_id=obj.sy_id).first()
+        return subsidy_year.y_subsidy if subsidy_year else 0
+
+    def get_year_subsidy_total(self, obj):
+        age_entry = self.get_age(obj)
+        y_subsidy = self.get_year_subsidy(obj)
+        unknown_1 = self.get_unknown_1(obj)
+        unknown_2 = self.get_unknown_2(obj)
+        unknown_3 = self.get_unknown_3(obj)
+        unknown_4 = self.get_unknown_4(obj)
+        unknown_5 = self.get_unknown_5(obj)
+        unknown_6 = self.get_unknown_6(obj)
+        unknown_7 = self.get_unknown_7(obj)
+        try:
+            age_entry = int(age_entry) if age_entry is not None else 0
+        except ValueError:
+            age_entry = 0
+        try:
+            y_subsidy = int(y_subsidy) if y_subsidy is not None else 0
+        except ValueError:
+            y_subsidy = 0
+        return age_entry * y_subsidy +(unknown_1 or 0) + (unknown_2 or 0) + (unknown_3 or 0) + (unknown_4 or 0) + (unknown_5 or 0) + (unknown_6 or 0) + (unknown_7 or 0)
+
+    def get_salary(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return None
+        salary = Salary.objects.filter(pos_id=employee.pos_id).first()
+        return salary.SalaryGrade if salary else None
+
+    def get_ot(self, obj):
+        overtime = OvertimeWork.objects.filter(emp_id=obj.emp_id).first()
+        if not overtime:
+            return None
+        return overtime.total_ot if overtime.total_ot else 0
+
+    def get_fuel(self, obj):
+        employee = obj.emp_id
+        if not employee or not employee.pos_id:
+            return 0
+        fuel_payment = FuelSubsidy.objects.filter(pos_id=employee.pos_id).first()
+        return fuel_payment.total_fuel if fuel_payment and fuel_payment.total_fuel else 0
+
+    def get_basic_income(self, obj):
+        salary = self.get_salary(obj) or 0
+        pos_subsidy = self.get_position_subsidy(obj) or 0
+        year_subsidy = self.get_year_subsidy_total(obj) or 0
+        ot = self.get_ot(obj) or 0
+        return math.ceil(float(salary) + float(pos_subsidy) + float(year_subsidy) + float(ot))
+
+    def get_regular_income(self, obj):
+        return math.ceil(float(self.get_basic_income(obj) or 0) + float(self.get_fuel(obj) or 0))
+
+    def get_other_income(self, obj):
+        emp_id = obj.emp_id_id
+        pos_id = obj.emp_id.pos_id_id
+        employee = Employee_lcic.objects.filter(emp_id=emp_id).first()
+        if not employee:
+            return Decimal('0.0')
+        jm = job_mobility.objects.filter(pos_id=pos_id).order_by('-date').first()
+        if not jm:
+            return Decimal('0.0')
+        days = Decimal(jm.number_of_days or 0)
+        amount = Decimal(jm.amount_per_day or 0)
+        policy = Decimal(jm.jm_policy or 0)
+        return float((days * amount) + policy)
+
+    def get_income_before_tax(self, obj):
+        return math.ceil(float(self.get_regular_income(obj) or 0) + float(self.get_other_income(obj) or 0))
+
+    def get_tax_5(self, obj):
+        income = self.get_income_before_tax(obj) or Decimal('0')
+        if Decimal('1300000.00') < income <= Decimal('5000000.00'):
+            t1 = income_tax.objects.filter(tax_id=1).first()
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            return (income - t1.calculation_base) * t2.tariff if t2 else Decimal('0')
+        if income > Decimal('5000000.00'):
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            return (t2.calculation_base * t2.tariff) if t2 else Decimal('0')
+
+    def get_tax_10(self, obj):
+        income = self.get_income_before_tax(obj) or Decimal('0')
+        if Decimal('5000000.00') < income <= Decimal('15000000.00'):
+            t1 = income_tax.objects.filter(tax_id=1).first()
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            t3 = income_tax.objects.filter(tax_id=3).first()
+            return (income - (t1.calculation_base + t2.calculation_base)) * t3.tariff if t3 else Decimal('0')
+        if income > Decimal('15000000.00'):
+            t3 = income_tax.objects.filter(tax_id=3).first()
+            return (t3.calculation_base * t3.tariff) if t3 else Decimal('0')
+
+    def get_tax_15(self, obj):
+        income = self.get_income_before_tax(obj) or Decimal('0')
+        if Decimal('15000000.00') < income <= Decimal('25000000.00'):
+            t1 = income_tax.objects.filter(tax_id=1).first()
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            t3 = income_tax.objects.filter(tax_id=3).first()
+            t4 = income_tax.objects.filter(tax_id=4).first()
+            return (income - (t1.calculation_base + t2.calculation_base + t3.calculation_base)) * t4.tariff if t4 else Decimal('0')
+        if income > Decimal('25000000.00'):
+            t4 = income_tax.objects.filter(tax_id=4).first()
+            return (t4.calculation_base * t4.tariff) if t4 else Decimal('0')
+
+    def get_tax_20(self, obj):
+        income = self.get_income_before_tax(obj) or Decimal('0')
+        if Decimal('25000000.00') < income <= Decimal('65000000.00'):
+            t1 = income_tax.objects.filter(tax_id=1).first()
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            t3 = income_tax.objects.filter(tax_id=3).first()
+            t4 = income_tax.objects.filter(tax_id=4).first()
+            t5 = income_tax.objects.filter(tax_id=5).first()
+            return (income - (t1.calculation_base + t2.calculation_base + t3.calculation_base + t4.calculation_base)) * t5.tariff if t5 else Decimal('0')
+        if income > Decimal('65000000.00'):
+            t5 = income_tax.objects.filter(tax_id=5).first()
+            return (t5.calculation_base * t5.tariff) if t5 else Decimal('0')
+
+    def get_tax_25(self, obj):
+        income = self.get_income_before_tax(obj) or Decimal('0')
+        if income > Decimal('65000000.00'):
+            t1 = income_tax.objects.filter(tax_id=1).first()
+            t2 = income_tax.objects.filter(tax_id=2).first()
+            t3 = income_tax.objects.filter(tax_id=3).first()
+            t4 = income_tax.objects.filter(tax_id=4).first()
+            t5 = income_tax.objects.filter(tax_id=5).first()
+            t6 = income_tax.objects.filter(tax_id=6).first()
+            return (income - (t1.calculation_base + t2.calculation_base + t3.calculation_base + t4.calculation_base + t5.calculation_base)) * t6.tariff if t6 else Decimal('0')
+
+    def get_total_tax(self, obj):
+        return math.ceil(float(sum([
+            self.get_tax_5(obj) or 0,
+            self.get_tax_10(obj) or 0,
+            self.get_tax_15(obj) or 0,
+            self.get_tax_20(obj) or 0,
+            self.get_tax_25(obj) or 0
+        ])))
+
+    def get_net_basic_income(self, obj):
+        return math.ceil(float(self.get_basic_income(obj) or 0) - float(self.get_total_tax(obj) or 0))
+
+    def get_child_subsidy_total(self, obj):
+        return math.ceil(float(obj.child_Subsidy) * float(obj.child))
+
+    def get_loan(self, obj):
+        saving = Saving_cooperative.objects.filter(emp_id=obj.emp_id).first()
+        return saving.loan_amount if saving and saving.loan_amount else 0
+
+    def get_interest(self, obj):
+        saving = Saving_cooperative.objects.filter(emp_id=obj.emp_id).first()
+        return saving.interest if saving and saving.interest else 0
+
+    def get_deposit(self, obj):
+        saving = Saving_cooperative.objects.filter(emp_id=obj.emp_id).first()
+        return saving.deposit if saving and saving.deposit else 0
+
+    def get_saving_total(self, obj):
+        saving = Saving_cooperative.objects.filter(emp_id=obj.emp_id).first()
+        if not saving:
+            return 0
+        return sum([saving.loan_amount or 0, saving.interest or 0, saving.deposit or 0])
+
+    def get_loan_194(self, obj):
+        saving = Saving_cooperative.objects.filter(emp_id=obj.emp_id).first()
+        return saving.Loan_deduction_194 if saving and saving.Loan_deduction_194 else 0
+
+    def get_net_salary(self, obj):
+        return ((self.get_net_basic_income(obj) + self.get_child_subsidy_total(obj) + (obj.health_Subsidy or 0)) - (self.get_saving_total(obj) + self.get_loan_194(obj)))
+
+    def get_exempt(self, obj):
+        return 1300000
+
+    def get_wf_8(self, obj): return 0
+    def get_wf_5_5(self, obj): return 0
+    def get_wf_8_5(self, obj): return 0
+    def get_wf_6(self, obj): return 0
+    def get_unknown_1(self, obj): return 0
+    def get_unknown_2(self, obj): return 0
+    def get_unknown_3(self, obj): return 0
+    def get_unknown_4(self, obj): return 0
+    def get_unknown_5(self, obj): return 0
+    def get_unknown_6(self, obj): return 0
+    def get_unknown_7(self, obj): return 0
+
+    def get_monthly_income(self, obj):
+        return math.ceil(float(self.get_other_income(obj) or 0) + float(self.get_net_salary(obj) or 0) + float(self.get_fuel(obj) or 0))
+
+    class Meta:
+        model = monthly_payment
+        fields = [
+            "id", "date", "emp_id", "lao_name", "pos_id", "position", "salary",
+            "wf_8", "wf_5_5", "wf_8_5", "wf_6", "position_subsidy", "age", "year_subsidy",
+            "unknown_1","unknown_2","unknown_3","unknown_4","unknown_5","unknown_6","unknown_7",
+            "year_subsidy_total",
+            "ot", "basic_income", "fuel", "regular_income", "other_income",
+            "income_before_tax", "exempt", "tax_5", "tax_10", "tax_15", "tax_20", "tax_25",
+            "total_tax", "net_basic_income", "child", "child_Subsidy", "child_subsidy_total",
+            "health_Subsidy", "loan", "interest", "deposit", "saving_total", "loan_194",
+            "net_salary","monthly_income"
+        ]
+
+
+    def get_sving_cooperative_history(self, emp):
+        if not emp or not emp.emp_id:
+            return 0
+        now = timezone.now()
+        return (
+            saving_cooperative_history.objects
+            .filter(
+                emp_id=emp.emp_id,
+                date__year=now.year,
+                date__month=now.month
+            )
+            .values_list("total_Saving", flat=True)
+            .first()
+        ) or 0
+    
+
+
+# class AssetTypeView(APIView):
+
+#     def get(self, request, ast_id=None):
+#         if ast_id:
+#             try:
+#                 asset = Asset_type.objects.get(ast_id=ast_id)
+#                 serializer = Asset_typeSerializer(asset)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             except Asset_type.DoesNotExist:
+#                 return Response({"error": "Asset_type not found"}, status=status.HTTP_404_NOT_FOUND)
+#             except Exception as e:
+#                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         else:
+#             assets = Asset_type.objects.all()
+#             serializer = Asset_typeSerializer(assets, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def post(self, request):
+#         serializer = Asset_typeSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def put(self, request, ast_id):
+#         try:
+#             asset = Asset_type.objects.get(ast_id=ast_id)
+#         except Asset_type.DoesNotExist:
+#             return Response(
+#                 {"error": f"Asset_type with ID {ast_id} not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+
+#         serializer = Asset_typeSerializer(asset, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, ast_id):
+#         try:
+#             asset = Asset_type.objects.get(ast_id=ast_id)
+#             asset.delete()
+#             return Response(
+#                 {"message": f"Asset_type with ID {ast_id} deleted successfully."},
+#                 status=status.HTTP_200_OK
+#             )
+#         except Asset_type.DoesNotExist:
+#             return Response(
+#                 {"error": f"Asset_type with ID {ast_id} not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+
+
+# class CategoryView(APIView):  
+#     def get(self, request, cat_id=None):
+#         if cat_id:
+#             try:
+#                 asset = Category.objects.get(cat_id=cat_id)
+#                 serializer = categorySerializer(asset)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             except Category.DoesNotExist:
+#                 return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+#             except Exception as e:
+#                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         else:
+#             assets = Category.objects.all()
+#             serializer = categorySerializer(assets, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def post(self, request):
+#         serializer = categorySerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def put(self, request, cat_id):
+#         try:
+#             asset = Category.objects.get(cat_id=cat_id)
+#         except Category.DoesNotExist:
+#             return Response(
+#                 {"error": f"Category with ID {cat_id} not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+
+#         serializer = categorySerializer(asset, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, cat_id):
+#         try:
+#             asset = Category.objects.get(cat_id=cat_id)
+#             asset.delete()
+#             return Response(
+#                 {"message": f"Category with ID {cat_id} deleted successfully."},
+#                 status=status.HTTP_200_OK
+#             )
+#         except Category.DoesNotExist:
+#             return Response(
+#                 {"error": f"Category with ID {cat_id} not found."},
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+
+
+# class AssetView(APIView):
+#     def get(self, request, as_id=None):
+#         if as_id:
+#             try:
+#                 asset = Asset.objects.get(as_id=as_id)
+#                 serializer = AssetSerializer(asset)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#             except Asset.DoesNotExist:
+#                 return Response({"error": "Asset not found"}, status=status.HTTP_404_NOT_FOUND)
+#             except Exception as e:
+#                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         else:
+#             assets = Asset.objects.all()
+#             serializer = AssetSerializer(assets, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def post(self, request):
+#         serializer = AssetSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def put(self, request, as_id):
+#         try:
+#             asset = Asset.objects.get(as_id=as_id)
+#         except Asset.DoesNotExist:
+#             return Response({"error": f"Asset with ID {as_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#         serializer = AssetSerializer(asset, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, as_id):
+#         try:
+#             asset = Asset.objects.get(as_id=as_id)
+#             asset.delete()
+#             return Response({"message": f"Asset with ID {as_id} deleted successfully."}, status=status.HTTP_200_OK)
+#         except Asset.DoesNotExist:
+#             return Response({"error": f"Asset with ID {as_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+# class CategorySearchView(APIView):
+#     def get(self, request):
+#         cat_num = request.query_params.get("cat_num")
+#         cat_name = request.query_params.get("cat_name")
+#         ast_id = request.query_params.get("ast_id")
+
+#         categories = Category.objects.all()
+
+#         if cat_num:
+#             categories = categories.filter(cat_num__icontains=cat_num)
+#         if cat_name:
+#             categories = categories.filter(cat_name__icontains=cat_name)
+#         if ast_id:
+#             categories = categories.filter(ast_id=ast_id)
+
+#         if categories.exists():
+#             serializer = categorySerializer(categories, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)ຫຫ
+
+#         return Response(
+#             {"message": "No categories found matching your search query."},
+#             status=status.HTTP_404_NOT_FOUND
+#         )
+
+
+# class Asset_typeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Asset_type
+#         fields = '__all__'
+
+# class categorySerializer(serializers.ModelSerializer):
+#         class Meta:
+#                 model = Category
+#                 fields = ['cat_id', 'ast_id', 'cat_num', 'cat_name']
+#                 read_only_fields = ['cat_id', 'cat_num']  # ກຳນົດໃຫ້ cat_num ບໍ່ສາມາດແກ້ໄຂໄດ້
+
+#         def create(self, validated_data):
+#                 with transaction.atomic():
+#                     # ຄົ້ນຫາ cat_num ທີ່ມີຄ່າສູງສຸດ
+#                     max_num = Category.objects.aggregate(Max('cat_num'))['cat_num__max']
+#                     if max_num:
+#                         # ສະກັດຕົວເລກຈາກ cat_num (ເຊັ່ນ: '01' -> 1)
+#                         num = int(max_num) + 1
+#                     else:
+#                         num = 1
+#                     # ສ້າງລະຫັດໃໝ່ໃນຮູບແບບ 01, 02, ...
+#                     validated_data['cat_num'] = f'{num:02d}'
+#                     # ສ້າງ object ໃໝ່
+#                     return Category.objects.create(**validated_data)document_lcic
+
+# class AssetSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Asset
+#         fields = '__all__'
+
+
+
+
+# class LoginView(APIView):
+#     def post(self, request):
+#         username = request.data.get("username")
+#         password = request.data.get("password")
+
+#         if not username or not password:
+#             return Response(
+#                 {"error": "ຈຳເປັນຕ້ອງມີຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         try:
+#             user = SystemUser.objects.get(username=username)
+#         except SystemUser.DoesNotExist:
+#             return Response(
+#                 {"error": "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ"},
+#                 status=status.HTTP_401_UNAUTHORIZED,
+#             )
+
+#         if check_password(password, user.password):
+#             refresh = RefreshToken.for_user(user)
+#             refresh["user_id"] = user.us_id
+#             refresh["username"] = user.username
+
+#             return Response(
+#                 {
+#                     "message": "ການລ໋ອກອິນສຳເລັດ",
+#                     "user": user.username,
+#                     "access_token": str(refresh.access_token),
+#                     "refresh_token": str(refresh),
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+#         else:
+#             return Response(
+#                 {"error": "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ"},
+#                 status=status.HTTP_401_UNAUTHORIZED,
+#             )

@@ -4,11 +4,12 @@ from .models import Employee_lcic
 from .models import Department,activity,document_lcic,Document_format,Document_type,SystemUser,document_general
 from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,Fuel_payment,
                      ForeignLanguage,WorkExperience,TrainingCourse,Award, DisciplinaryAction, FamilyMember, Evaluation)
-from .models import Status,Sidebar,Document_Status
-from .models import Position,col_policy,job_mobility,income_tax, Saving_cooperative
+from .models import Status,Sidebar,Document_Status,evaluation_score, uniform,evaluation_score_emp
+from .models import Position,col_policy,job_mobility,income_tax, Saving_cooperative,welfare
 import datetime
 import math
 import re
+from decimal import Decimal
 from django.db.models import Max
 from rest_framework import serializers
 from .models import (
@@ -16,7 +17,8 @@ from .models import (
     FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
     MobilePhoneSubsidy, SystemSetting, OvertimeWork,monthly_payment
 )
-from .models import Overtime_history,colpolicy_history,fuel_payment_history
+from .models import (Overtime_history,colpolicy_history,fuel_payment_history,saving_cooperative_history,specialday_emp_history,monthly_payment_history,
+                     uniform_history,evaluation_score_emp_history,MobilePhoneSubsidy_emp_History)
     # def to_internal_value(self, data):
     #     try:
     #         # ຮັບຂໍ້ມູນວັນທີໃນຮູບ ddmmyy
@@ -272,35 +274,7 @@ class User_emp_Serializer(serializers.ModelSerializer):
         # ສົມມຸດວ່າ SystemUser ມີຄວາມສຳພັນ: obj.Employee.pic
         return obj.Employee.pic.url if obj.Employee and obj.Employee.pic else None
 
-# class Asset_typeSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Asset_type
-#         fields = '__all__'
 
-# class categorySerializer(serializers.ModelSerializer):
-#         class Meta:
-#                 model = Category
-#                 fields = ['cat_id', 'ast_id', 'cat_num', 'cat_name']
-#                 read_only_fields = ['cat_id', 'cat_num']  # ກຳນົດໃຫ້ cat_num ບໍ່ສາມາດແກ້ໄຂໄດ້
-
-#         def create(self, validated_data):
-#                 with transaction.atomic():
-#                     # ຄົ້ນຫາ cat_num ທີ່ມີຄ່າສູງສຸດ
-#                     max_num = Category.objects.aggregate(Max('cat_num'))['cat_num__max']
-#                     if max_num:
-#                         # ສະກັດຕົວເລກຈາກ cat_num (ເຊັ່ນ: '01' -> 1)
-#                         num = int(max_num) + 1
-#                     else:
-#                         num = 1
-#                     # ສ້າງລະຫັດໃໝ່ໃນຮູບແບບ 01, 02, ...
-#                     validated_data['cat_num'] = f'{num:02d}'
-#                     # ສ້າງ object ໃໝ່
-#                     return Category.objects.create(**validated_data)
-
-# class AssetSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Asset
-#         fields = '__all__'
 class CustomDateField(serializers.DateField):
     def to_representation(self, value):
         # ສະແດງຂໍ້ມູນວັນທີໃນຮູບ ddmmyy
@@ -311,7 +285,6 @@ class user_empSerializer(serializers.ModelSerializer):
         model = SystemUser
         fields = '__all__'
 
-
 class PositionSerializer(serializers.ModelSerializer):
     # fuel_subsidy = serializers.CharField(source='fs_id.fuel_subsidy', read_only=True)
     # salary = serializers.CharField(source='sal_id.SalaryGrade', read_only=True)
@@ -320,7 +293,6 @@ class PositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Position
         fields = '__all__'
-
 
 class SalarySerializer(serializers.ModelSerializer):
     class Meta:
@@ -342,24 +314,29 @@ class SystemSettingSerializer(serializers.ModelSerializer):
         model = SystemSetting
         fields = ['id', 'key', 'value']
 
+class get_uniformSerializer(serializers.ModelSerializer):
+    formal_suit = serializers.CharField(source='uniform_price.formal_suit', read_only=True)
+    emp_uniform = serializers.CharField(source='uniform_price.emp_uniform', read_only=True)
+    amount_sui = serializers.CharField(source='uniform_price.amount_sui', read_only=True)
+    amount_uni = serializers.CharField(source='uniform_price.amount_uni', read_only=True)
+    class Meta:
+        model = uniform
+        fields = ['uni_id','formal_suit','amount_sui', 'emp_uniform','amount_uni']
+
+class uniformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = uniform
+        fields = '__all__'
+
 class FuelSubsidySerializer(serializers.ModelSerializer):
     class Meta:
         model = FuelSubsidy
         fields = '__all__'
 
 class get_FuelSubsidySerializer(serializers.ModelSerializer):
-    update_date = CustomDateField(read_only=True)
-    fuel_price = serializers.CharField(source='fuel_price.value', read_only=True)
-    emp_id =serializers.SerializerMethodField()
-    date_price = CustomDateField(source='fuel_price.date', read_only=True)
-    def get_emp_id(self, obj):
-        if not obj.pos_id:
-            return None
-        employee = Employee_lcic.objects.filter(pos_id=obj.pos_id).first()
-        return employee.emp_id if employee else None
     class Meta:
         model = FuelSubsidy
-        fields = ['fs_id','emp_id','pos_id','update_date','fuel_subsidy','fuel_price','total_fuel','date_price']      
+        fields = ['fs_id','pos_id','fuel_subsidy' ]   
 
 class fuel_paymentSerializer(serializers.ModelSerializer):
     emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
@@ -416,11 +393,15 @@ class Specialday_PositionSerializer(serializers.ModelSerializer):
     special_day = serializers.CharField(source='special_day.occasion_name', read_only=True)
     class Meta:
         model = SpecialDay_Position
-        fields = ['id','sdg_id','special_day','pos_name','grant']
+        fields = ['id','sdg_id','special_day','pos_id','pos_name','grant']
+
+from datetime import date
 
 class Specialday_empserialiser(serializers.ModelSerializer):
     pos_name = serializers.CharField(source='pos_id.name', read_only=True)
     special_day = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()  # ເພີ່ມ field "today" ຢູ່ລະດັບ root
+
     def get_special_day(self, obj):
         try:
             employee = Employee_lcic.objects.get(emp_id=obj.emp_id)
@@ -437,16 +418,25 @@ class Specialday_empserialiser(serializers.ModelSerializer):
         except Employee_lcic.DoesNotExist:
             return []
         return []
+
+    def get_date(self, obj):
+        return date.today().strftime("%Y-%m-%d")
+
     class Meta:
         model = Employee_lcic
-        fields = ['lao_name','pos_name','special_day']
-
+        fields = ['date', 'emp_id', 'lao_name', 'pos_id', 'pos_name', 'special_day']
 
 class MobilePhoneSubsidySerializer(serializers.ModelSerializer):
+    pso_name = serializers.CharField(source='pos_id.name', read_only=True)
     class Meta:
         model = MobilePhoneSubsidy
-        fields = '__all__'
+        fields = ['mb_id', 'pos_id', 'pso_name', 'grant',]
 
+class job_mobilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = job_mobility
+        fields = ["jm_id","pos_id", "jm_policy", "number_of_days", "amount_per_day"]
+        
 class col_policySerializer(serializers.ModelSerializer):
     # emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
     pos_id = serializers.CharField(source='emp_id.pos_id.pos_id', read_only=True)
@@ -587,23 +577,46 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
 
 class Saving_cooperativeSerializer(serializers.ModelSerializer):
     emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
-    total_Saving_cooperative = serializers.SerializerMethodField()
-
-    def get_total_Saving_cooperative(self, obj):
+    total_Saving = serializers.SerializerMethodField()
+    pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
+    pos_name = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
+    date = serializers.SerializerMethodField()
+    def get_total_Saving(self, obj):
         loan = obj.loan_amount or 0
         interest = obj.interest or 0
         deposit = obj.deposit or 0
         return loan + interest + deposit
+    def get_date(self, obj):
+        return date.today().strftime("%Y-%m-%d")
     class Meta:
         model = Saving_cooperative
-        fields = ['sc_id', 'date', 'emp_id', 'emp_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194','total_Saving_cooperative']
+        fields = ['sc_id', 'date', 'emp_id', 'emp_name','pos_id','pos_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194','total_Saving']
 
 class income_taxSerializer(serializers.ModelSerializer):
     class Meta:
         model = income_tax
         fields = '__all__'
-from decimal import Decimal
-class monthly_paymentSerializer1(serializers.ModelSerializer):
+
+class welfareSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = welfare
+        fields = '__all__'
+
+class evaluation_scoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = evaluation_score
+        fields = '__all__'
+class evaluation_score_empSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = evaluation_score_emp
+        fields = '__all__'
+
+class health_allowanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = monthly_payment
+        fields  = '__all__'
+
+class monthly_paymentSerializer(serializers.ModelSerializer):
     lao_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
     pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
     position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
@@ -620,6 +633,13 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
     wf_5_5 = serializers.SerializerMethodField()
     wf_8_5 = serializers.SerializerMethodField()
     wf_6 = serializers.SerializerMethodField()
+    unknown_1 = serializers.SerializerMethodField()
+    unknown_2 = serializers.SerializerMethodField()
+    unknown_3 = serializers.SerializerMethodField()
+    unknown_4 = serializers.SerializerMethodField()
+    unknown_5 = serializers.SerializerMethodField()
+    unknown_6 = serializers.SerializerMethodField()
+    unknown_7 = serializers.SerializerMethodField()
     regular_income = serializers.SerializerMethodField()
     other_income = serializers.SerializerMethodField()
     income_before_tax = serializers.SerializerMethodField()
@@ -637,6 +657,7 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
     interest = serializers.SerializerMethodField()
     deposit = serializers.SerializerMethodField()
     loan_194 = serializers.SerializerMethodField()
+    monthly_income = serializers.SerializerMethodField()
 
     def get_position_subsidy(self, obj):
         employee = obj.emp_id
@@ -650,7 +671,6 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
             return None
         age_entry = Employee_lcic.objects.filter(emp_id=obj.emp_id.emp_id).first()
         return age_entry.age_entry if age_entry else None
-
     def get_year_subsidy(self, obj):
         age_entry = self.get_age(obj)
         try:
@@ -675,6 +695,13 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
     def get_year_subsidy_total(self, obj):
         age_entry = self.get_age(obj)
         y_subsidy = self.get_year_subsidy(obj)
+        unknown_1 = self.get_unknown_1(obj)
+        unknown_2 = self.get_unknown_2(obj)
+        unknown_3 = self.get_unknown_3(obj)
+        unknown_4 = self.get_unknown_4(obj)
+        unknown_5 = self.get_unknown_5(obj)
+        unknown_6 = self.get_unknown_6(obj)
+        unknown_7 = self.get_unknown_7(obj)
         try:
             age_entry = int(age_entry) if age_entry is not None else 0
         except ValueError:
@@ -683,7 +710,7 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
             y_subsidy = int(y_subsidy) if y_subsidy is not None else 0
         except ValueError:
             y_subsidy = 0
-        return age_entry * y_subsidy
+        return age_entry * y_subsidy +(unknown_1 or 0) + (unknown_2 or 0) + (unknown_3 or 0) + (unknown_4 or 0) + (unknown_5 or 0) + (unknown_6 or 0) + (unknown_7 or 0)
 
     def get_salary(self, obj):
         employee = obj.emp_id
@@ -836,19 +863,37 @@ class monthly_paymentSerializer1(serializers.ModelSerializer):
     def get_wf_5_5(self, obj): return 0
     def get_wf_8_5(self, obj): return 0
     def get_wf_6(self, obj): return 0
+    def get_unknown_1(self, obj): return 0
+    def get_unknown_2(self, obj): return 0
+    def get_unknown_3(self, obj): return 0
+    def get_unknown_4(self, obj): return 0
+    def get_unknown_5(self, obj): return 0
+    def get_unknown_6(self, obj): return 0
+    def get_unknown_7(self, obj): return 0
+
+    def get_monthly_income(self, obj):
+        return math.ceil(float(self.get_other_income(obj) or 0) + float(self.get_net_salary(obj) or 0) + float(self.get_fuel(obj) or 0))
 
     class Meta:
         model = monthly_payment
         fields = [
             "id", "date", "emp_id", "lao_name", "pos_id", "position", "salary",
             "wf_8", "wf_5_5", "wf_8_5", "wf_6", "position_subsidy", "age", "year_subsidy",
-            "year_subsidy_total", "ot", "basic_income", "fuel", "regular_income", "other_income",
+            "unknown_1","unknown_2","unknown_3","unknown_4","unknown_5","unknown_6","unknown_7",
+            "year_subsidy_total",
+            "ot", "basic_income", "fuel", "regular_income", "other_income",
             "income_before_tax", "exempt", "tax_5", "tax_10", "tax_15", "tax_20", "tax_25",
             "total_tax", "net_basic_income", "child", "child_Subsidy", "child_subsidy_total",
             "health_Subsidy", "loan", "interest", "deposit", "saving_total", "loan_194",
-            "net_salary"
+            "net_salary","monthly_income"
         ]
 
+class test_monlyserializers(serializers.ModelSerializer):
+    class Meta:
+        model = monthly_payment
+        fields = '__all__'
+
+#history serializers
 
 class post_Overtime_historyserializer(serializers.ModelSerializer):
     class Meta:
@@ -891,7 +936,25 @@ class get_colpolicy_historyserializer(serializers.ModelSerializer):
     class Meta:
         model = colpolicy_history
         fields = ['col_id', 'date','emp_id','emp_name', 'pos_name', 'number_of_days', 'amount_per_day', 'total_amount', 'jm_policy', 'total_payment']
-        
+
+class post_specialday_emp_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = specialday_emp_history
+        fields = '__all__'
+class get_specialday_emp_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = specialday_emp_history
+        fields = '__all__'
+
+class post_MobilePhoneSubsidy_emp_Historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = MobilePhoneSubsidy_emp_History
+        fields = '__all__'
+class get_MobilePhoneSubsidy_emp_Historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = MobilePhoneSubsidy_emp_History
+        fields = '__all__'
+
 class post_fuel_payment_historyserializer(serializers.ModelSerializer):
     class Meta:
         model = fuel_payment_history
@@ -900,3 +963,45 @@ class get_fuel_payment_historyserializer(serializers.ModelSerializer):
     class Meta:
         model = fuel_payment_history
         fields = ['fp_id', 'date', 'emp_name', 'position', 'fuel_subsidy', 'fuel_price', 'total_fuel']
+
+class post_saving_cooperative_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = saving_cooperative_history
+        fields = '__all__'
+class get_saving_cooperative_historyserializer(serializers.ModelSerializer):
+    emp_name = serializers.SerializerMethodField()
+    def get_emp_name(self, obj):
+        emp_name = Employee_lcic.objects.filter(emp_id=obj.emp_id).first()
+        if not obj.emp_id:
+            return None
+        return emp_name.lao_name
+    class Meta:
+        model = saving_cooperative_history
+        fields = ['id', 'date', 'emp_id', 'emp_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194', 'total_Saving']
+
+class post_uniform_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = uniform_history
+        fields = '__all__'
+class get_uniform_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = uniform_history
+        fields = '__all__'
+    
+class post_evaluation_score_emp_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = evaluation_score_emp_history
+        fields = '__all__'
+class get_evaluation_score_emp_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = evaluation_score_emp_history
+        fields = '__all__'
+
+class post_monthly_payment_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = monthly_payment_history
+        fields = '__all__'
+class get_monthly_payment_historyserializer(serializers.ModelSerializer):
+    class Meta:
+        model = monthly_payment_history
+        fields = '__all__'

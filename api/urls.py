@@ -6,7 +6,7 @@ from .views import activityCreateView,activityListView,activityDeleteView,activi
 from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View,DocumentFormatSearchView
 from .views import Department_AddView,Department_UpdateView,Department_DeleteView,document_lcic_List_idView,document_general_SearchView
 from .views import Document_format_ListView,Document_format_AddView,Document_format_UpdateView,Document_format_DeleteView,Document_format_idView
-from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView,user_empView
+from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView,user_empView, UniformView
 # from .views import AssetTypeView,AssetView,CategoryView,CategorySearchView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -16,12 +16,16 @@ from rest_framework.routers import DefaultRouter
 from .views import PositionViewSet
 from .views import FuelSubsidyView
 from .views import reset_all_overtimes
-from .views import Overtime_historyView, colpolicy_historyView, fuel_payment_historyView
+from .views import (Overtime_historyView, colpolicy_historyView, fuel_payment_historyView,saving_cooperative_historyView,specialday_emp_historyView, monthly_payment_historyView,
+uniform_historyView,MobilePhoneSubsidy_empAPIView)
+
 from .views import (
-    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,monthly_paymentViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,
-    SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,
-    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet,SpecialDayViewSet,SpecialDayPositionFilterAPIView
+    PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,welfareViewSet,evaluation_scoreViewSet,
+    SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,job_mobilityViewSet,health_allowanceViewSet,
+    SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet,SpecialDayViewSet,SpecialDayPositionFilterAPIView,evaluation_score_empAPIView,
+    evaluation_score_emp_historyView,MobilePhoneSubsidy_emp_HistoryView
 )
+from .views import (test_monly)
 router = DefaultRouter()
 router.register(r'positions', PositionViewSet)
 router.register(r'fuel_payment', Fuel_pamentViewSet)
@@ -34,10 +38,13 @@ router.register(r'sdg_emp', SpecialDay_empViewSet,basename='specialday-emp')
 router.register(r'sd', SpecialDayViewSet, basename='specialday')
 router.register(r'mps', MobilePhoneSubsidyViewSet)
 router.register(r'col_policy', col_policyViewSet)
+router.register(r'job_mobility', job_mobilityViewSet)
 router.register(r'income_tax', income_taxViewSet)
 router.register(r'sc', Saving_cooperativeViewSet)
+router.register(r'welfare', welfareViewSet)
+router.register(r'es', evaluation_scoreViewSet)
 # router.register(r'ot', OvertimeWorkViewSet)
-router.register(r'mon_ly', monthly_paymentViewSet)
+router.register(r'health_allowance', health_allowanceViewSet)
 from .views import get_position_details
 urlpatterns = [
     path('users/', UserView.as_view(), name='user-list-create'),
@@ -108,6 +115,9 @@ urlpatterns = [
 
     # path('fuel-price/', FuelPriceView.as_view(), name='fuel-price'),
 
+    path('mps_emp/',MobilePhoneSubsidy_empAPIView.as_view(), name='mobile-phone-subsidy-emp-list'),
+    path('mps_emp/<int:emp_id>/', MobilePhoneSubsidy_empAPIView.as_view(), name='mobile-phone-subsidy-emp-detail'),
+
     path('fuel/', FuelSubsidyView.as_view(), name='fuel_subsidy_list'),
     path('fuel/<int:fs_id>/', FuelSubsidyView.as_view(), name='fuel_subsidy_detail'),
 
@@ -116,6 +126,18 @@ urlpatterns = [
     path('ot/', ovtimeWorkView.as_view(), name='monthly-payment-list-create'),
     path('ot/<int:ot_id>/', ovtimeWorkView.as_view(), name='monthly-payment-update-delete'),
     path('reset_all_ot/', reset_all_overtimes, name='reset-all-overtimes'),
+
+    path('mon_ly/', test_monly.as_view(), name='monthly-payment-list-create'),
+    path('mon_ly/<int:emp_id>/', test_monly.as_view(), name='monthly-payment-update-delete'),
+    # path('test_monly/', test_monly.as_view(), name='test_monly-list-create'),
+    # path('test_monly/<str:emp_id>/', test_monly.as_view()),
+
+    path('uniform/', UniformView.as_view()),
+    path('uniform/<int:uni_id>/', UniformView.as_view()),
+
+    path('es_emp/', evaluation_score_empAPIView.as_view()),
+    path('es_emp/<int:emp_id>/', evaluation_score_empAPIView.as_view()),
+    path('es_emp/<int:ese_id>/', evaluation_score_empAPIView.as_view()),
 
     #History
 
@@ -128,6 +150,24 @@ urlpatterns = [
 
     path('fuel_history/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_list'),
     path('fuel_history/<int:emp_id>/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_detail'),
+
+    path('sc_history/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_list'),
+    path('sc_history/<int:emp_id>/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_detail'),
+
+    path('mps_emp_history/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_list'),
+    path('mps_emp_history/<int:emp_id>/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_detail'),
+
+    path('sdg_emp_history/', specialday_emp_historyView.as_view(), name='specialday_emp_history_list'),
+    path('sdg_emp_history/<int:emp_id>/', specialday_emp_historyView.as_view(), name='specialday_emp_history_detail'),
+
+    path('uniform_history/', uniform_historyView.as_view(), name='uniform_history_list'),
+    path('uniform_history/<int:emp_id>/', uniform_historyView.as_view(), name='uniform_history_detail'),
+ 
+    path('es_emp_history/', evaluation_score_emp_historyView.as_view(), name='uniform_history_list'),
+    path('es_emp_history/<int:emp_id>/', evaluation_score_emp_historyView.as_view(), name='uniform_history_detail'),
+
+    path('mon_ly_history/', monthly_payment_historyView.as_view(), name='monthly_payment_history_list'),
+    path('mon_ly_history/<int:emp_id>/', monthly_payment_historyView.as_view(), name='monthly_payment_history_detail'),
 
     path('sdg_filter/', SpecialDayPositionFilterAPIView.as_view(), name='specialday-filter'),
 

@@ -28,7 +28,6 @@ def general_document_directory_path(instance, filename):
         name = ascii_name
     return f'documents_general/{str(instance.department.id)}/{name}{ext}'
 
-
 class SystemUser(models.Model):
     us_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
@@ -60,7 +59,7 @@ class Employee_lcic(models.Model):
     Department = models.ForeignKey('Department', on_delete=models.CASCADE)
     pos_id = models.ForeignKey('Position', on_delete=models.CASCADE,null=True,blank=True) # ຕຳແໜ່ງ
     year_entry = models.CharField(null=True)  # ປີເຂົ້າເຮັດວຽກ
-    age_entry = models.CharField(null=True)
+    age_entry = models.CharField(null=True,default=0)
     salary_level = models.CharField(max_length=100)# ຂັ້ນເງິນເດືອນ
     phone = models.CharField(max_length=20)  # ເບີໂທ
     pic = models.ImageField(upload_to='emp_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
@@ -343,14 +342,14 @@ class SpecialDay_Position(models.Model):
     grant = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ຈຳນວນເງິນທີ່ເພີ່ມໃນວັນສຳຄັນ
 
 class MobilePhoneSubsidy(models.Model):
-    mb = models.AutoField(primary_key=True)
+    mb_id = models.AutoField(primary_key=True)
     pos_id = models.ForeignKey(Position, on_delete=models.CASCADE, null=True, blank=True)
     grant = models.BigIntegerField()
 
 class OvertimeWork(models.Model):
     ot_id = models.AutoField(primary_key=True)
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)
-    date = models.DateField(auto_now_add=True) #ວັນຄິດໄລ່ໂອທີ
+    date = models.DateField(null=True, blank=True)
     csd_evening = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນລັດຖະການເງິນເພີ່ມໃນຄແລງ 17:00-22:00
     csd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນລັດຖະການເງິນເພີ່ມໃນຕອນກາງຄືນ 22:00-6:00
     hd_mor_after= models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນພັກເງິນເພີ່ມໃນເວັນ 8:00-16:00
@@ -361,10 +360,10 @@ class OvertimeWork(models.Model):
 class Saving_cooperative(models.Model):
     sc_id = models.AutoField(primary_key=True)
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE) # ລະຫັດພະນັກງານ
-    loan_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນກູ້
-    interest = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ອັດຕາດອກເບີກ
-    deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນຝາກ
-    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # ຈຳນວນເງິນຫຼຸດການກູ້ 194
+    loan_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນກູ້
+    interest = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ອັດຕາດອກເບີກ
+    deposit = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນຝາກ
+    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນຫຼຸດການກູ້ 194
     date = models.DateField(auto_now=True) # ວັນທີ່ບັນທຶກ
 
 
@@ -389,6 +388,19 @@ class job_mobility(models.Model):
     jm_policy = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ນະໂຍບາຍການເຄື່ອນໄຫວງານ
     number_of_days = models.IntegerField(null=True, blank=True)  # ຈຳນວນມື້
 
+class uniform_price(models.Model):
+    key = models.CharField(max_length=50, unique=True)
+    date = models.DateField(auto_now=True, null=True, blank=True)
+    emp_uniform = models.CharField(max_length=100, null=True, blank=True)  # ປະເພດເສື້ອ
+    formal_suit = models.CharField(max_length=50, null=True, blank=True)  # ສູດທາງການ
+    amount_uni = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) 
+class uniform(models.Model):
+    uni_id = models.AutoField(primary_key=True)  # ລະຫັດເສື້ອ
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
+    date = models.DateField( auto_now=True, null=True, blank=True)  
+    uniform_price = models.ForeignKey(uniform_price, on_delete=models.CASCADE,null=True, blank=True)
+
 class income_tax(models.Model):
     tax_id = models.AutoField(primary_key=True)  # ລະຫັດພາສີ
     lvl = models.PositiveIntegerField(unique=True)  # ຂັ້ນ
@@ -398,33 +410,52 @@ class income_tax(models.Model):
     each_level_tax = models.DecimalField(max_digits=12, decimal_places=2)  # ພາສີຕໍ່ຂັ້ນ
     all_tax = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ພາສີທັງໝົດ
 
+class welfare(models.Model):
+    wf_id = models.AutoField(primary_key=True)  # ລະຫັດສິນເສີມ
+    date = models.DateField(null=True, blank=True)  # ວັນທີ່ເພີ່ມ
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
+    emp_type = models.CharField(max_length=50, null=True, blank=True)  # ປະເພດພະນັກງານ (ເກົ່າ, ໃໝ່)
+    from_company = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # ລັດສະເພາະ
+    from_emp = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # ລັດສະເພາະຈາກພະນັກງານ
+
+class evaluation_score(models.Model):
+    es_id = models.AutoField(primary_key=True)
+    es_type = models.CharField(max_length=50, null=True, blank=True)  # ປະເພດຄະແນນ
+    calclate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ຄະແນນທີ່ຄິດໄລ່
+
+class evaluation_score_emp(models.Model):
+    ese_id = models.AutoField(primary_key=True)
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
+    es_id = models.ForeignKey(evaluation_score, on_delete=models.CASCADE, null=True, blank=True)  # ຄະແນນ
 
 # history models
 
 class Overtime_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
-    date = models.CharField(max_length=20,null=True, blank=True)
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    date = models.DateField(null=True, blank=True)
     ot_id = models.BigIntegerField()
     emp_id = models.BigIntegerField()
     emp_name = models.CharField(max_length=255,null=True, blank=True)
     pos_id = models.BigIntegerField()
     position = models.CharField(max_length=255,null=True, blank=True)
-    csd_evening = models.CharField(max_length=20,null=True, blank=True)
-    csd_night = models.CharField(max_length=20,null=True, blank=True)
-    hd_mor_after = models.CharField(max_length=20,null=True, blank=True)
-    hd_evening = models.CharField(max_length=20,null=True, blank=True)
-    hd_night = models.CharField(max_length=20,null=True, blank=True) 
-    salary = models.CharField(max_length=50,null=True, blank=True)
-    value_150 = models.CharField(max_length=20,null=True, blank=True)
-    value_200 = models.CharField(max_length=20,null=True, blank=True)
-    value_250 = models.CharField(max_length=20,null=True, blank=True)
-    value_300 = models.CharField(max_length=20,null=True, blank=True)
-    value_350 = models.CharField(max_length=20,null=True, blank=True)
-    total_ot = models.CharField(max_length=20,null=True, blank=True)
+    csd_evening = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    csd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hd_mor_after = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hd_evening = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    hd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) 
+    salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    value_150 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    value_200 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    value_250 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    value_300 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    value_350 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    total_ot = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
 class colpolicy_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
-    date = models.CharField(max_length=20)
+    date_insert = models.DateTimeField(auto_now_add=True)
+    date = models.DateField(null=True, blank=True)
     col_id = models.BigIntegerField()
     emp_id = models.BigIntegerField()
     pos_id = models.BigIntegerField()
@@ -436,8 +467,9 @@ class colpolicy_history(models.Model):
 
 class fuel_payment_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    date = models.DateField(null=True, blank=True)
     fp_id = models.BigIntegerField()
-    date = models.CharField(max_length=20, null=True, blank=True)
     emp_id = models.BigIntegerField()
     emp_name = models.CharField(max_length=255, null=True, blank=True)
     emp_id = models.BigIntegerField()
@@ -445,3 +477,113 @@ class fuel_payment_history(models.Model):
     fuel_subsidy = models.CharField(max_length=50, null=True, blank=True)
     fuel_price = models.CharField(max_length=50, null=True, blank=True)
     total_fuel = models.CharField(max_length=50, null=True, blank=True)
+
+class specialday_emp_history(models.Model):
+    id = models.AutoField(primary_key=True)  # ID as AutoField
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    date = models.DateField(null=True, blank=True)
+    emp_id = models.IntegerField()
+    emp_name = models.CharField(max_length=255)
+    pos_id = models.IntegerField()
+    pos_name = models.CharField(max_length=255)
+    sdg_id = models.IntegerField()
+    sdg_name = models.CharField(max_length=255)
+    grant = models.DecimalField(max_digits=12, decimal_places=2)
+
+class MobilePhoneSubsidy_emp_History(models.Model):
+    date = models.DateField()  # ວັນທີ່ກ່ຽວຂ້ອງ (ຕົວຢ່າງ: ວັນທີ່ມອບເງິນ)
+    date_insert = models.DateField(auto_now_add=True)  # ວັນທີ່ເພີ່ມເຂົ້າລະບົບ
+    emp_id = models.IntegerField()  # ລະຫັດພະນັກງານ
+    lao_name = models.CharField(max_length=100)  # ຊື່ພະນັກງານ
+    pos_id = models.IntegerField()  # ລະຫັດຕຳແໜ່ງ
+    pos_name = models.CharField(max_length=100)  # ຊື່ຕຳແໜ່ງ
+    mb_id = models.IntegerField()  # ລະຫັດຂອງ MobilePhoneSubsidy
+    grant = models.BigIntegerField()  # ຈໍານວນເງິນຊ່ວຍເຫຼືອ
+
+class saving_cooperative_history(models.Model):
+    id = models.AutoField(primary_key=True)  # ID as AutoField
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    date = models.DateField()
+    emp_id = models.IntegerField()
+    emp_name = models.CharField(max_length=255)
+    pos_id = models.IntegerField()
+    pos_name = models.CharField(max_length=255)
+    loan_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    interest = models.DecimalField(max_digits=12, decimal_places=2)
+    deposit = models.DecimalField(max_digits=12, decimal_places=2)
+    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2)
+    total_Saving = models.DecimalField(max_digits=15, decimal_places=2)
+
+class uniform_history(models.Model):
+    uh_id = models.AutoField(primary_key=True)  
+    uni_id = models.IntegerField()  
+    date_insert = models.DateTimeField(auto_now_add=True) 
+    date = models.DateField(null=True, blank=True)
+    emp_id = models.IntegerField()  
+    emp_name = models.CharField(max_length=255) 
+    pos_id = models.IntegerField()  
+    pos_name = models.CharField(max_length=255)  
+    formal_suit = models.DecimalField(max_digits=12, decimal_places=2)  
+    amount_sui = models.IntegerField()
+    emp_uniform = models.DecimalField(max_digits=12, decimal_places=2)  
+    amount_uni = models.IntegerField()  
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2) 
+
+class evaluation_score_emp_history(models.Model):
+    eseh_id = models.AutoField(primary_key=True)  # ລະຫັດບັນທຶກ
+    ese_id = models.IntegerField()  # ລະຫັດຄະແນນພະນັກງານ
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    emp_id = models.IntegerField(null=True, blank=True)  # ລະຫັດພະນັກງານ
+    date = models.DateField(null=True, blank=True)
+    emp_name = models.CharField(max_length=255, null=True, blank=True)  # ຊື່ເຕັມ
+    pos_id = models.IntegerField()
+    pos_name = models.CharField(max_length=255)
+    salary =models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    es_id = models.IntegerField(null=True, blank=True)  # ລະຫັດຄະແນນ
+    es_type = models.CharField(max_length=50, null=True, blank=True)  # ປະເພດຄະແນນ
+    calclate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ຄະແນນ
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)  # ຈຳນວນເງິນທີ່ເພີ່ມ
+
+class monthly_payment_history(models.Model):
+    mph_id = models.AutoField(primary_key=True)
+    date_insert = models.DateTimeField(auto_now_add=True)  # ວັນທີ່ເພີ່ມ
+    date = models.DateField(null=True, blank=True)
+    emp_id = models.IntegerField(null=True, blank=True)
+    lao_name = models.CharField(max_length=255, null=True, blank=True)
+    pos_id = models.IntegerField(null=True, blank=True)
+    position = models.CharField(max_length=255, null=True, blank=True)
+    salary = models.FloatField(null=True, blank=True)
+    wf_emp = models.FloatField(null=True, blank=True)
+    wf_cpn = models.FloatField(null=True, blank=True)
+    position_subsidy = models.FloatField(null=True, blank=True)
+    age = models.CharField(max_length=10, null=True, blank=True)
+    get_1_5 = models.FloatField(null=True, blank=True)
+    get_6_15 = models.FloatField(null=True, blank=True)
+    get_16_25 = models.FloatField(null=True, blank=True)
+    get_26 = models.FloatField(null=True, blank=True)
+    year_subsidy_total = models.FloatField(null=True, blank=True)
+    ot = models.FloatField(null=True, blank=True)
+    basic_income = models.FloatField(null=True, blank=True)
+    fuel = models.FloatField(null=True, blank=True)  
+    regular_income = models.FloatField(null=True, blank=True)
+    other_income = models.FloatField(null=True, blank=True)
+    income_before_tax = models.FloatField(null=True, blank=True)
+    exempt = models.FloatField(null=True, blank=True)
+    tax_5 = models.FloatField(null=True, blank=True)
+    tax_10 = models.FloatField(null=True, blank=True)
+    tax_15 = models.FloatField(null=True, blank=True)
+    tax_20 = models.FloatField(null=True, blank=True)
+    tax_25 = models.FloatField(null=True, blank=True)
+    total_tax = models.FloatField(null=True, blank=True)
+    income_after_tax = models.FloatField(null=True, blank=True)
+    child = models.IntegerField(null=True, blank=True)
+    child_subsidy = models.FloatField(null=True, blank=True)
+    child_subsidy_total = models.FloatField(null=True, blank=True)
+    health_subsidy = models.FloatField(null=True, blank=True)
+    loan = models.FloatField(null=True, blank=True)
+    interest = models.FloatField(null=True, blank=True)
+    deposit = models.FloatField(null=True, blank=True)
+    loan_194 = models.FloatField(null=True, blank=True)
+    saving_total = models.FloatField(null=True, blank=True)
+    salary_payment = models.FloatField(null=True, blank=True)
+    monthly_income = models.FloatField(null=True, blank=True)
