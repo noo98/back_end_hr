@@ -731,8 +731,8 @@ class EmployeeInfoAPI(APIView):
         return Response(employee_data, status=status.HTTP_200_OK)
 
 class document_general_View(APIView):
-    # authentication_classes = [CustomJWTAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [CustomJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, docg_id=None):
         if docg_id:
             try:
@@ -1797,7 +1797,7 @@ class UniformView(APIView):
                 if not data.uniform_price or not data.emp_id:
                     return Response({'error': 'Incomplete data'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # ดึงค่าเป็น Decimal แล้ว fallback = 0
+                # ແປເປັນ Decimal ປ້ອງກັນ error
                 formal_suit = Decimal(data.uniform_price.formal_suit or 0)
                 emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
                 amount_uni = Decimal(data.amount_uni or 0)
@@ -1816,7 +1816,7 @@ class UniformView(APIView):
                     "amount_sui": float(amount_sui),
                     "emp_uniform": str(emp_uniform),
                     "amount_uni": float(amount_uni),
-                    "total_amount": float(total_amount),
+                    "total_amount": float(total_amount)
                 }
                 return Response(result, status=status.HTTP_200_OK)
 
@@ -1825,7 +1825,7 @@ class UniformView(APIView):
                 results = []
                 for data in all_data:
                     if not data.uniform_price or not data.emp_id:
-                        continue  # skip ข้อมูลไม่ครบ
+                        continue  # ຂ້າມລາຍການທີ່ຂໍ້ມູນບໍ່ຄົບ
 
                     formal_suit = Decimal(data.uniform_price.formal_suit or 0)
                     emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
@@ -1845,7 +1845,7 @@ class UniformView(APIView):
                         "amount_sui": float(amount_sui),
                         "emp_uniform": str(emp_uniform),
                         "amount_uni": float(amount_uni),
-                        "total_amount": float(total_amount),
+                        "total_amount": float(total_amount)
                     })
                 return Response(results, status=status.HTTP_200_OK)
 
@@ -1877,7 +1877,7 @@ class UniformView(APIView):
             return Response({'error': 'Uniform not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # อัปเดต uniform หลัก
-        serializer = uniformSerializer (instance, data=request.data, partial=True)
+        serializer = uniformSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
 
@@ -1935,7 +1935,7 @@ def reset_all_saving_cooperatives(request):
             sc.loan_amount = 0
             sc.interest = 0
             sc.deposit = 0
-            sc.Loan_deduction_194 = 0  
+            sc.Loan_deduction_194 = 0
             sc.date = date.today()
             sc.save()
 
@@ -2560,7 +2560,7 @@ class test_monly(APIView):
             .values_list("total_Saving", flat=True)
             .first()
         ) or 0
-
+        
     def get_MobilePhoneSubsidy_emp_History(self, emp):
         if not emp or not emp.emp_id:
             return 0
@@ -2590,7 +2590,7 @@ class test_monly(APIView):
             .values_list("total_amount", flat=True)
             .first()
         ) or 0
-
+    
     def get_exempt(self, emp):
         income = getattr(emp, "income_before_tax", Decimal(0))
         if income > 130000.00:
@@ -2712,7 +2712,6 @@ class test_monly(APIView):
                                 + Decimal(self.get_evaluation_score_emp_history(emp)))
                 income_before_tax = Decimal(regular_income) + Decimal(other_income)
                 emp.income_before_tax = income_before_tax
-
                 exempt = self.get_exempt(emp)
                 tax_5 = self.get_tax_5(emp)
                 tax_10 = self.get_tax_10(emp)
@@ -2757,7 +2756,12 @@ class test_monly(APIView):
                     "ot": ot,
                     "basic_income": basic_income,
                     "fuel": fuel,
-                    "regular_income": regular_income,                    
+                    "regular_income": regular_income,
+                    "colpolicy": colpolicy,
+                    "specialday": specialday,
+                    "uniform": uniform,
+                    "MobilePhoneSubsidy": MobilePhoneSubsidy,
+                    "evaluation_score": evaluation_score,
                     "other_income": other_income,
                     "income_before_tax": income_before_tax,
                     "exempt": exempt,

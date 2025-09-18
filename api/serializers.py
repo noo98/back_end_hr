@@ -28,17 +28,12 @@ from .models import (Overtime_history,colpolicy_history,fuel_payment_history,sav
 
 
 class SystemUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False)  # 👈 ป้องกัน error และไม่ส่งกลับ
+    # password = serializers.CharField(write_only=True, required=False)  # 👈 ป้องกัน error และไม่ส่งกลับ
     pic = serializers.ImageField(required=False, allow_null=True)      # 👈 ป้องกัน error เวลาไม่ส่งรูป
 
     class Meta:
         model = SystemUser
-        fields = ['us_id', 'username','password', 'Department', 'Employee', 'pic', 'role_id']
-        
-class RoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Role
-        fields = '__all__'
+        fields = ['us_id', 'username','password', 'Department', 'Employee', 'pic']
 
 class RolePermissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -611,7 +606,7 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
             'value_350',
             'total_ot',
         ]
-
+        
 class Saving_cooperativeSerializer(serializers.ModelSerializer):
     emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
     total_Saving = serializers.SerializerMethodField()

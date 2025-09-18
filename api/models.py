@@ -34,6 +34,7 @@ class SystemUser(models.Model):
     password = models.CharField(max_length=255)  # Store hashed passwords
     Department = models.ForeignKey('Department', on_delete=models.CASCADE)
     Employee =  models.ForeignKey('Employee_lcic', on_delete=models.CASCADE) # ພະແນກ
+    # status = models.IntegerField()
     pic = models.ImageField(upload_to='user_img/',null=True,blank=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
     role_id = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, related_name='users')
     
@@ -441,13 +442,13 @@ class uniform_price(models.Model):
     date = models.DateField(auto_now=True, null=True, blank=True)
     emp_uniform = models.CharField(max_length=100, null=True, blank=True)  # ປະເພດເສື້ອ
     formal_suit = models.CharField(max_length=50, null=True, blank=True)  # ສູດທາງການ
- 
+
 class uniform(models.Model):
     uni_id = models.AutoField(primary_key=True)  # ລະຫັດເສື້ອ
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
-    date = models.DateField( auto_now=True, null=True, blank=True)
+    date = models.DateField( auto_now=True, null=True, blank=True)  
     amount_uni = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) 
     uniform_price = models.ForeignKey(uniform_price, on_delete=models.CASCADE,null=True, blank=True)
 
 class income_tax(models.Model):

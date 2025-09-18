@@ -188,7 +188,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.45.33:80',
     'http://127.0.0.1:5500'
 ]
-ALLOWED_HOSTS = ['192.168.45.52','183.182.99.30','192.168.45.53']
+ALLOWED_HOSTS = ['192.168.45.52','183.182.99.30','127.0.0.1','localhost']
 # ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 import os
