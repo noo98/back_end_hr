@@ -34,11 +34,59 @@ class SystemUser(models.Model):
     password = models.CharField(max_length=255)  # Store hashed passwords
     Department = models.ForeignKey('Department', on_delete=models.CASCADE)
     Employee =  models.ForeignKey('Employee_lcic', on_delete=models.CASCADE) # ພະແນກ
-    status = models.IntegerField()
     pic = models.ImageField(upload_to='user_img/',null=True,blank=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
+    role_id = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, related_name='users')
+    
 
     def __str__(self):
         return self.username
+    
+class Role(models.Model):
+    role_id = models.AutoField(primary_key=True)
+    role_name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(default="")
+
+    class Meta:
+        db_table = 'db_role'
+
+    def __str__(self):
+        return self.role_name
+        
+class RolePermission(models.Model):
+    per_id = models.AutoField(primary_key=True)
+    role_id = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='role_permissions')
+    menu_id = models.ForeignKey('Menu', on_delete=models.CASCADE, related_name='role_permissions')
+
+    class Meta:
+        db_table = 'db_role_permission'
+        unique_together = ('role_id', 'menu_id')
+
+    def __str__(self):
+        return f"{self.role_id.role_name} - {self.menu_id.menu_name}"
+
+class Menu(models.Model):
+    menu_id = models.AutoField(primary_key=True)
+    menu_name = models.CharField(max_length=100)
+    url = models.CharField(max_length=255, blank=True, null=True)
+    icon = models.CharField(max_length=50, blank=True, null=True)
+    main_id = models.ForeignKey('MainMenu', on_delete=models.SET_NULL, null=True, blank=True, related_name='menus')
+
+    class Meta:
+        db_table = 'db_menu'
+
+    def __str__(self):
+        return self.menu_name
+
+class MainMenu(models.Model):
+    main_id = models.AutoField(primary_key=True)
+    main_name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        db_table = 'db_main_menu'
+
+    def __str__(self):
+        return self.main_name
 
 class Sidebar(models.Model):
     sid_id = models.AutoField(primary_key=True)
@@ -393,12 +441,13 @@ class uniform_price(models.Model):
     date = models.DateField(auto_now=True, null=True, blank=True)
     emp_uniform = models.CharField(max_length=100, null=True, blank=True)  # ປະເພດເສື້ອ
     formal_suit = models.CharField(max_length=50, null=True, blank=True)  # ສູດທາງການ
-    amount_uni = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) 
+ 
 class uniform(models.Model):
     uni_id = models.AutoField(primary_key=True)  # ລະຫັດເສື້ອ
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)  # ພະນັກງານ
-    date = models.DateField( auto_now=True, null=True, blank=True)  
+    date = models.DateField( auto_now=True, null=True, blank=True)
+    amount_uni = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     uniform_price = models.ForeignKey(uniform_price, on_delete=models.CASCADE,null=True, blank=True)
 
 class income_tax(models.Model):

@@ -5,7 +5,7 @@ from .models import Department,activity,document_lcic,Document_format,Document_t
 from .models import (PersonalInformation,Education,SpecializedEducation,PoliticalTheoryEducation,Fuel_payment,
                      ForeignLanguage,WorkExperience,TrainingCourse,Award, DisciplinaryAction, FamilyMember, Evaluation)
 from .models import Status,Sidebar,Document_Status,evaluation_score, uniform,evaluation_score_emp
-from .models import Position,col_policy,job_mobility,income_tax, Saving_cooperative,welfare
+from .models import Position,col_policy,job_mobility,income_tax, Saving_cooperative,welfare, Role, RolePermission, Menu, MainMenu
 import datetime
 import math
 import re
@@ -33,9 +33,46 @@ class SystemUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SystemUser
-        fields = ['us_id', 'username','password', 'status', 'Department', 'Employee', 'pic']
+        fields = ['us_id', 'username','password', 'Department', 'Employee', 'pic', 'role_id']
+        
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
 
+class RolePermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RolePermission
+        fields = '__all__'
 
+class MainMenuSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MainMenu
+        fields = '__all__'
+
+class MenuSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Menu
+        fields = '__all__'
+
+class MenuSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Menu
+        fields = ['menu_id', 'menu_name', 'url', 'icon',]
+
+class MainMenuUserMenuSerializer(serializers.ModelSerializer):
+    children = MenuSerializers(many=True, read_only=True, source='menus')  # ກໍາຫນົດ source ໃຫ້ຖືກຕ້ອງ
+
+    class Meta:
+        model = MainMenu
+        fields = ['main_id', 'main_name', 'icon', 'children']
+
+class UserMenuSerializer(serializers.ModelSerializer):
+    menus = MainMenuUserMenuSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SystemUser
+        fields = ['us_id', 'username', 'menus']
 class EducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Education

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserView,LoginView
+from .views import UserView,LoginView, reset_all_saving_cooperatives
 from .views import Employee_lcicView,EmployeeInfoAPI,UpdateAllJobMobilityAPIView
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_deleteView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
@@ -23,7 +23,8 @@ from .views import (
     PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,welfareViewSet,evaluation_scoreViewSet,
     SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,job_mobilityViewSet,health_allowanceViewSet,
     SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet,SpecialDayViewSet,SpecialDayPositionFilterAPIView,evaluation_score_empAPIView,
-    evaluation_score_emp_historyView,MobilePhoneSubsidy_emp_HistoryView
+    evaluation_score_emp_historyView,MobilePhoneSubsidy_emp_HistoryView, RoleListCreate, RoleRetrieveUpdateDestroy,RolePermissionListCreate, RolePermissionRetrieveUpdateDestroy,
+    MenuListCreate, MenuRetrieveUpdateDestroy,MainMenuListCreate, MainMenuRetrieveUpdateDestroy,UserMenuDetail
 )
 from .views import (test_monly)
 router = DefaultRouter()
@@ -53,6 +54,22 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('user_emp/', user_empView.as_view(), name='user_emp-list'),
     path('user_emp/<int:us_id>/', user_empView.as_view(), name='user_emp-id'),
+    path('users_menu/<int:pk>/', UserMenuDetail.as_view(), name='user-menus'),
+
+    path('roles/', RoleListCreate.as_view(), name='role-list-create'),
+    path('roles/<int:pk>/', RoleRetrieveUpdateDestroy.as_view(), name='role-detail'),
+    
+    # RolePermission URLs
+    path('role-permissions/', RolePermissionListCreate.as_view(), name='rolepermission-list-create'),
+    path('role-permissions/<int:pk>/', RolePermissionRetrieveUpdateDestroy.as_view(), name='rolepermission-detail'),
+    
+    # Menu URLs
+    path('menu/', MenuListCreate.as_view(), name='menu-list-create'),
+    path('menu/<int:pk>/', MenuRetrieveUpdateDestroy.as_view(), name='menu-detail'),
+    
+    # MainMenu URLs
+    path('mainmenu/', MainMenuListCreate.as_view(), name='mainmenu-list-create'),
+    path('mainmenu/<int:pk>/', MainMenuRetrieveUpdateDestroy.as_view(), name='mainmenu-detail'),
 
     path('permission/', permission_lcic_View.as_view(), name='permission-list-create'),
     path('permission/<int:sta_id>/', permission_lcic_View.as_view(), name='permission-update-delete'),
@@ -126,6 +143,7 @@ urlpatterns = [
     path('ot/', ovtimeWorkView.as_view(), name='monthly-payment-list-create'),
     path('ot/<int:ot_id>/', ovtimeWorkView.as_view(), name='monthly-payment-update-delete'),
     path('reset_all_ot/', reset_all_overtimes, name='reset-all-overtimes'),
+    path('reset_all_sc/', reset_all_saving_cooperatives, name='reset-all-saving'),
 
     path('mon_ly/', test_monly.as_view(), name='monthly-payment-list-create'),
     path('mon_ly/<int:emp_id>/', test_monly.as_view(), name='monthly-payment-update-delete'),
@@ -153,6 +171,7 @@ urlpatterns = [
 
     path('sc_history/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_list'),
     path('sc_history/<int:emp_id>/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_detail'),
+
 
     path('mps_emp_history/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_list'),
     path('mps_emp_history/<int:emp_id>/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_detail'),

@@ -98,6 +98,9 @@ from .serializers import (
 )
 from .models import saving_cooperative_history
 from .serializers import post_saving_cooperative_historyserializer ,get_saving_cooperative_historyserializer
+from rest_framework import generics
+from .models import Role, RolePermission, Menu, MainMenu
+from .serializers import RoleSerializer, RolePermissionSerializer, MenuSerializer, MainMenuSerializer, UserMenuSerializer
 
 # @csrf_exempt
 def update_view_status(request, doc_id):
@@ -495,6 +498,102 @@ class LoginView(APIView):
             return Response(
                 {"error": "ຊື່ຜູ້ໃຊ້ ຫລື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ"},
                 status=status.HTTP_401_UNAUTHORIZED,
+            )
+        
+# Role CRUD
+class RoleListCreate(generics.ListCreateAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+class RoleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+# RolePermission CRUD
+class RolePermissionListCreate(generics.ListCreateAPIView):
+    queryset = RolePermission.objects.all()
+    serializer_class = RolePermissionSerializer
+
+class RolePermissionRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = RolePermission.objects.all()
+    serializer_class = RolePermissionSerializer
+
+# Menu CRUD
+class MenuListCreate(generics.ListCreateAPIView):
+    queryset = Menu.objects.all()
+    serializer_class = MenuSerializer
+
+class MenuRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Menu.objects.all()
+    serializer_class = MenuSerializer
+
+# MainMenu CRUD
+class MainMenuListCreate(generics.ListCreateAPIView):
+    queryset = MainMenu.objects.all()
+    serializer_class = MainMenuSerializer
+
+class MainMenuRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = MainMenu.objects.all()
+    serializer_class = MainMenuSerializer
+
+# User Menu View
+class UserMenuDetail(generics.RetrieveAPIView):
+    serializer_class = UserMenuSerializer
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        return SystemUser.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        user_id = kwargs.get('pk')
+        try:
+            # ດຶງ user ແລະ role_id
+            user = SystemUser.objects.get(pk=user_id)
+            role_id = user.role_id_id  # ດຶງ role_id ຈາກ user
+
+            # ດຶງ menu_ids ທີ່ກ່ຽວຂ້ອງກັບ role_id ຜ່ານ RolePermission
+            role_permissions = RolePermission.objects.filter(role_id=role_id).values('menu_id')
+            menu_ids = [rp['menu_id'] for rp in role_permissions]
+
+            # ດຶງ menus ທີ່ກ່ຽວຂ້ອງກັບ menu_ids
+            menus = Menu.objects.filter(menu_id__in=menu_ids).select_related('main_id')
+
+            # ສ້າງ dictionary ເພື່ອກຸ່ມ menus ຕາມ main_id
+            main_menu_dict = {}
+            for menu in menus:
+                main_id = menu.main_id.main_id
+                if main_id not in main_menu_dict:
+                    main_menu_dict[main_id] = {
+                        'main_id': main_id,
+                        'main_name': menu.main_id.main_name,
+                        'icon': menu.main_id.icon,
+                        'children': []
+                    }
+                main_menu_dict[main_id]['children'].append({
+                    'menu_id': menu.menu_id,
+                    'menu_name': menu.menu_name,
+                    'url': menu.url,
+                    'icon': menu.icon
+                })
+
+            # ແປງ dictionary ເປັນລາຍການ
+            filtered_menus = list(main_menu_dict.values())
+
+            # ຈັດລຽງ children ຕາມ menu_id (ຖ້າຕ້ອງການ)
+            for main_menu in filtered_menus:
+                main_menu['children'] = sorted(main_menu['children'], key=lambda x: x['menu_id'])
+
+            logger.info(f"Retrieved menus for user_id: {user_id}, role_id: {role_id}")
+            return Response(filtered_menus, status=status.HTTP_200_OK)
+
+        except SystemUser.DoesNotExist:
+            logger.error(f"User not found: {user_id}")
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Unexpected error for user_id {user_id}: {str(e)}")
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class document_lcic_SearchView(APIView):
@@ -1661,11 +1760,12 @@ class evaluation_score_empAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, emp_id=None):
-        items = evaluation_score_emp.objects.filter(ese_id=emp_id)
+        items = evaluation_score_emp.objects.filter(emp_id=emp_id)
         if not items.exists():
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         items.delete()
-        return Response({'message': 'Deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Deleted successfully'}, status=status.HTTP_200_OK)
     
 class UpdateAllJobMobilityAPIView(APIView):
     def put(self, request):
@@ -1696,52 +1796,56 @@ class UniformView(APIView):
                 data = uniform.objects.select_related('uniform_price', 'emp_id__pos_id').get(uni_id=uni_id)
                 if not data.uniform_price or not data.emp_id:
                     return Response({'error': 'Incomplete data'}, status=status.HTTP_400_BAD_REQUEST)
-                
-                formal_suit = int(getattr(data.uniform_price, 'formal_suit', 0) or 0)
-                emp_uniform = int(getattr(data.uniform_price, 'emp_uniform', 0) or 0)
-                amount_uni = int(getattr(data.uniform_price, 'amount_uni', 0) or 0)
-                amount_sui = int(getattr(data.uniform_price, 'amount_sui', 0) or 0)
+
+                # ดึงค่าเป็น Decimal แล้ว fallback = 0
+                formal_suit = Decimal(data.uniform_price.formal_suit or 0)
+                emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
+                amount_uni = Decimal(data.amount_uni or 0)
+                amount_sui = Decimal(data.amount_sui or 0)
+
                 total_amount = (emp_uniform * amount_uni) + (formal_suit * amount_sui)
 
                 result = {
                     "uni_id": data.uni_id,
-                    "date": date.today(),
+                    "date": data.date or date.today(),
                     "emp_id": data.emp_id.emp_id,
                     "emp_name": data.emp_id.lao_name,
                     "pos_id": data.emp_id.pos_id.pos_id if data.emp_id.pos_id else None,
                     "pos_name": data.emp_id.pos_id.name if data.emp_id.pos_id else "",
                     "formal_suit": str(formal_suit),
-                    "amount_sui": amount_sui,
+                    "amount_sui": float(amount_sui),
                     "emp_uniform": str(emp_uniform),
-                    "amount_uni": amount_uni,
-                    "total_amount": total_amount
+                    "amount_uni": float(amount_uni),
+                    "total_amount": float(total_amount),
                 }
                 return Response(result, status=status.HTTP_200_OK)
-            
+
             else:
                 all_data = uniform.objects.select_related('uniform_price', 'emp_id__pos_id').all().order_by("emp_id__pos_id")
                 results = []
                 for data in all_data:
                     if not data.uniform_price or not data.emp_id:
-                        continue  # ຂ້າມລາຍການທີ່ຂໍ້ມູນບໍ່ຄົບ
-                    formal_suit = int(getattr(data.uniform_price, 'formal_suit', 0) or 0)
-                    emp_uniform = int(getattr(data.uniform_price, 'emp_uniform', 0) or 0)
-                    amount_uni = int(getattr(data.uniform_price, 'amount_uni', 0) or 0)
-                    amount_sui = int(getattr(data.uniform_price, 'amount_sui', 0) or 0)
+                        continue  # skip ข้อมูลไม่ครบ
+
+                    formal_suit = Decimal(data.uniform_price.formal_suit or 0)
+                    emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
+                    amount_uni = Decimal(data.amount_uni or 0)
+                    amount_sui = Decimal(data.amount_sui or 0)
+
                     total_amount = (emp_uniform * amount_uni) + (formal_suit * amount_sui)
 
                     results.append({
                         "uni_id": data.uni_id,
-                        "date": date.today(),
+                        "date": data.date or date.today(),
                         "emp_id": data.emp_id.emp_id,
                         "emp_name": data.emp_id.lao_name,
                         "pos_id": data.emp_id.pos_id.pos_id if data.emp_id.pos_id else None,
                         "pos_name": data.emp_id.pos_id.name if data.emp_id.pos_id else "",
                         "formal_suit": str(formal_suit),
-                        "amount_sui": amount_sui,
+                        "amount_sui": float(amount_sui),
                         "emp_uniform": str(emp_uniform),
-                        "amount_uni": amount_uni,
-                        "total_amount": total_amount
+                        "amount_uni": float(amount_uni),
+                        "total_amount": float(total_amount),
                     })
                 return Response(results, status=status.HTTP_200_OK)
 
@@ -1773,7 +1877,7 @@ class UniformView(APIView):
             return Response({'error': 'Uniform not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # อัปเดต uniform หลัก
-        serializer = get_uniformSerializer(instance, data=request.data, partial=True)
+        serializer = uniformSerializer (instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
 
@@ -1821,8 +1925,24 @@ def reset_all_overtimes(request):
         ot.hd_night = None
         ot.total_ot = None
         ot.save()
-    
     return Response({"message": "All OT records reset successfully."}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def reset_all_saving_cooperatives(request):
+    try:
+        cooperatives = Saving_cooperative.objects.all()
+        for sc in cooperatives:
+            sc.loan_amount = 0
+            sc.interest = 0
+            sc.deposit = 0
+            sc.Loan_deduction_194 = 0  
+            sc.date = date.today()
+            sc.save()
+
+        return Response({"message": "All Saving Cooperative records reset successfully."}, 
+                        status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class Overtime_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -1861,7 +1981,7 @@ class Overtime_historyView(APIView):
             duplicate_months = sorted(set(duplicates))
             months_str = ", ".join(str(m) for m in duplicate_months)
             return Response({
-                'error': f'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ໄດ້ບັນທຶກເດືອນ {months_str} ແລ້ວ'
+                'error': f'ມີການຄິດໄລ່ໃນເດືອນ {months_str} ນີ້ແລ້ວ!!'
             }, status=status.HTTP_400_BAD_REQUEST)
         # validate ແລະ save
         serializer = post_Overtime_historyserializer(data=data, many=True)
@@ -1888,42 +2008,38 @@ class colpolicy_historyView(APIView):
         duplicates = []
 
         for item in data:
-            try:
-                # ແປວັນທີທີ່ສົ່ງມາໃຫ້ເປັນ datetime
-                date_obj = datetime.strptime(item['date'], '%Y-%m-%d')
-                target_month = date_obj.month
-                target_year = date_obj.year
-            except ValueError:
-                return Response({'error': f"ຮູບແບບວັນທີບໍ່ຖືກຕ້ອງ: {item['date']}"}, status=status.HTTP_400_BAD_REQUEST)
+            # เอาเดือน/ปี ปัจจุบันมาใช้แทน date_insert ที่ request ส่งมา
+            now = timezone.now()
+            target_month = now.month
+            target_year = now.year
 
-            # ດຶງທັງໝົດຂອງ emp_id ຈາກ DB
+            # ดึง records ของ emp_id
             records = colpolicy_history.objects.filter(emp_id=item['emp_id'])
 
             for record in records:
-                try:
-                    record_date = datetime.strptime(record.date, '%Y-%m-%d')
-                    if record_date.month == target_month and record_date.year == target_year:
-                        duplicates.append({
-                            'emp_id': item['emp_id'],
-                            'month': target_month,
-                            'year': target_year
-                        })
-                        break  # ຂ້າມກວດຕໍ່ຖ້າພົບຊ້ຳ
-                except:
-                    continue  # ຂໍ້ມູນໃນ DB ບໍ່ຖືກຮູບແບບ
+                # record.date_insert เป็น datetime อยู่แล้ว ไม่ต้อง strptime
+                if record.date_insert.month == target_month and record.date_insert.year == target_year:
+                    duplicates.append({
+                        'emp_id': item['emp_id'],
+                        'month': target_month,
+                        'year': target_year
+                    })
+                    break  # ข้ามถ้าพบซ้ำแล้ว
 
         if duplicates:
+            duplicate_months = sorted(set(d['month'] for d in duplicates))
+            months_str = ", ".join(str(m) for m in duplicate_months)
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
-                # 'duplicates': duplicates
+                'error': f'ມີການຄິດໄລ່ໃນເດືອນ {months_str} ນີ້ແລ້ວ!!'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # validate ແລະ save
+        # validate และ save
         serializer = post_colpolicy_historyserializer(data=data, many=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class fuel_payment_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -1962,8 +2078,10 @@ class fuel_payment_historyView(APIView):
                     break
 
         if duplicates:
+            duplicate_months = sorted(set(d['month'] for d in duplicates))
+            months_str = ", ".join(str(m) for m in duplicate_months)
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
+                'error': f'ມີການຄິດໄລ່ໃນເດືອນ {months_str} ນີ້ແລ້ວ!!',
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_fuel_payment_historyserializer(data=data, many=True)
@@ -1971,6 +2089,8 @@ class fuel_payment_historyView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class specialday_emp_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -2016,9 +2136,10 @@ class specialday_emp_historyView(APIView):
                     break
 
         if duplicates:
+            duplicate_months = sorted(set(d['year'] for d in duplicates))
+            months_str = ", ".join(str(m) for m in duplicate_months)
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
-                'duplicates': duplicates  # ແຈ້ງລາຍການທີ່ຊ້ຳ
+                'error': f'ມີການຄິດໄລ່ໃນເດືອນ {months_str} ນີ້ແລ້ວ!!',
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_specialday_emp_historyserializer(data=data, many=True)
@@ -2246,7 +2367,7 @@ class uniform_historyView(APIView):
         if duplicates:
             return Response({
                 'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_40_BAD_REQUEST)
 
         serializer = post_uniform_historyserializer(data=data, many=True)
         if serializer.is_valid():
@@ -2439,7 +2560,37 @@ class test_monly(APIView):
             .values_list("total_Saving", flat=True)
             .first()
         ) or 0
-        
+
+    def get_MobilePhoneSubsidy_emp_History(self, emp):
+        if not emp or not emp.emp_id:
+            return 0
+        now = timezone.now()
+        return (
+            MobilePhoneSubsidy_emp_History.objects
+            .filter(
+                emp_id=emp.emp_id,
+                date__year=now.year,
+                date__month=now.month
+            )
+            .values_list("grant", flat=True)
+            .first()
+        ) or 0
+    
+    def get_evaluation_score_emp_history(self, emp):
+        if not emp or not emp.emp_id:
+            return 0
+        now = timezone.now()
+        return (
+            evaluation_score_emp_history.objects
+            .filter(
+                emp_id=emp.emp_id,
+                date__year=now.year,
+                date__month=now.month
+            )
+            .values_list("total_amount", flat=True)
+            .first()
+        ) or 0
+
     def get_exempt(self, emp):
         income = getattr(emp, "income_before_tax", Decimal(0))
         if income > 130000.00:
@@ -2549,7 +2700,16 @@ class test_monly(APIView):
                 basic_income = (salary + position_subsidy + year_subsidy_total + ot) - wf_emp
                 fuel = self.get_fuel_payment_history(emp)
                 regular_income = Decimal(basic_income) + Decimal(fuel)
-                other_income = Decimal(self.get_colpolicy_history(emp)) + Decimal(self.get_specialday_emp_history(emp)) + Decimal(self.get_uniform_history(emp)) or Decimal(0)
+                colpolicy = self.get_colpolicy_history(emp)
+                specialday = self.get_specialday_emp_history(emp)
+                uniform = self.get_uniform_history(emp)
+                MobilePhoneSubsidy = self.get_MobilePhoneSubsidy_emp_History(emp)
+                evaluation_score = self.get_evaluation_score_emp_history(emp)
+                other_income = (Decimal(self.get_colpolicy_history(emp)) 
+                                + Decimal(self.get_specialday_emp_history(emp)) 
+                                + Decimal(self.get_uniform_history(emp)) 
+                                + Decimal(self.get_MobilePhoneSubsidy_emp_History(emp)) 
+                                + Decimal(self.get_evaluation_score_emp_history(emp)))
                 income_before_tax = Decimal(regular_income) + Decimal(other_income)
                 emp.income_before_tax = income_before_tax
 
@@ -2597,7 +2757,7 @@ class test_monly(APIView):
                     "ot": ot,
                     "basic_income": basic_income,
                     "fuel": fuel,
-                    "regular_income": regular_income,
+                    "regular_income": regular_income,                    
                     "other_income": other_income,
                     "income_before_tax": income_before_tax,
                     "exempt": exempt,
