@@ -398,13 +398,14 @@ class MobilePhoneSubsidy(models.Model):
 class OvertimeWork(models.Model):
     ot_id = models.AutoField(primary_key=True)
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)
-    date = models.DateField(null=True, blank=True)
+    date = models.DateField(auto_now=True)
     csd_evening = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນລັດຖະການເງິນເພີ່ມໃນຄແລງ 17:00-22:00
     csd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນລັດຖະການເງິນເພີ່ມໃນຕອນກາງຄືນ 22:00-6:00
     hd_mor_after= models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນພັກເງິນເພີ່ມໃນເວັນ 8:00-16:00
     hd_evening = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນພັກເງິນເພີ່ມໃນຕອນແລງ 16:00-22:00
     hd_night = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ວັນພັກເງິນເພີ່ມໃນຕອນກາງຄືນ 22:00-6:00
     total_ot = models.BigIntegerField(null=True, blank=True)  # ຍອມໃຫ້ປ່ຽນແປງໄດ້ ແລະໃສ່ຄ່າວ່າງໄດ້
+    # recorder = models.ForeignKey(SystemUser,on_delete=models.SET_NULL,null=True,blank=True,related_name="overtime_records")
 
 class Saving_cooperative(models.Model):
     sc_id = models.AutoField(primary_key=True)
@@ -501,6 +502,8 @@ class Overtime_history(models.Model):
     value_300 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     value_350 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     total_ot = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class colpolicy_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
@@ -513,7 +516,9 @@ class colpolicy_history(models.Model):
     amount_per_day = models.CharField(max_length=20)
     total_amount = models.CharField(max_length=20)
     jm_policy = models.CharField(max_length=20)
-    total_payment = models.CharField(max_length=20)
+    total_payment = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class fuel_payment_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
@@ -526,7 +531,9 @@ class fuel_payment_history(models.Model):
     position = models.CharField(max_length=255, null=True, blank=True)
     fuel_subsidy = models.CharField(max_length=50, null=True, blank=True)
     fuel_price = models.CharField(max_length=50, null=True, blank=True)
-    total_fuel = models.CharField(max_length=50, null=True, blank=True)
+    total_fuel = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class specialday_emp_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
@@ -539,6 +546,8 @@ class specialday_emp_history(models.Model):
     sdg_id = models.IntegerField()
     sdg_name = models.CharField(max_length=255)
     grant = models.DecimalField(max_digits=12, decimal_places=2)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class MobilePhoneSubsidy_emp_History(models.Model):
     date = models.DateField()  # ວັນທີ່ກ່ຽວຂ້ອງ (ຕົວຢ່າງ: ວັນທີ່ມອບເງິນ)
@@ -549,6 +558,8 @@ class MobilePhoneSubsidy_emp_History(models.Model):
     pos_name = models.CharField(max_length=100)  # ຊື່ຕຳແໜ່ງ
     mb_id = models.IntegerField()  # ລະຫັດຂອງ MobilePhoneSubsidy
     grant = models.BigIntegerField()  # ຈໍານວນເງິນຊ່ວຍເຫຼືອ
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class saving_cooperative_history(models.Model):
     id = models.AutoField(primary_key=True)  # ID as AutoField
@@ -563,6 +574,8 @@ class saving_cooperative_history(models.Model):
     deposit = models.DecimalField(max_digits=12, decimal_places=2)
     Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2)
     total_Saving = models.DecimalField(max_digits=15, decimal_places=2)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class uniform_history(models.Model):
     uh_id = models.AutoField(primary_key=True)  
@@ -578,6 +591,8 @@ class uniform_history(models.Model):
     emp_uniform = models.DecimalField(max_digits=12, decimal_places=2)  
     amount_uni = models.IntegerField()  
     total_amount = models.DecimalField(max_digits=15, decimal_places=2) 
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class evaluation_score_emp_history(models.Model):
     eseh_id = models.AutoField(primary_key=True)  # ລະຫັດບັນທຶກ
@@ -593,6 +608,8 @@ class evaluation_score_emp_history(models.Model):
     es_type = models.CharField(max_length=50, null=True, blank=True)  # ປະເພດຄະແນນ
     calclate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)  # ຄະແນນ
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)  # ຈຳນວນເງິນທີ່ເພີ່ມ
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
 class monthly_payment_history(models.Model):
     mph_id = models.AutoField(primary_key=True)
@@ -637,3 +654,5 @@ class monthly_payment_history(models.Model):
     saving_total = models.FloatField(null=True, blank=True)
     salary_payment = models.FloatField(null=True, blank=True)
     monthly_income = models.FloatField(null=True, blank=True)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)

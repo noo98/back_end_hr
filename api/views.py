@@ -787,6 +787,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 class Employee_lcicView(APIView):
     # authentication_classes = [CustomJWTAuthentication]
     # permission_classes = [IsAuthenticated]
+
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     def get(self, request, emp_id: int = None):
         if emp_id:
@@ -1444,6 +1445,16 @@ class MobilePhoneSubsidyViewSet(viewsets.ModelViewSet):
     queryset = MobilePhoneSubsidy.objects.all().order_by('pos_id')
     serializer_class = MobilePhoneSubsidySerializer
 class MobilePhoneSubsidy_empAPIView(APIView):
+    def get_status(self, obj):
+        now = timezone.now()
+        exists = MobilePhoneSubsidy_emp_History.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
     def get(self, request, emp_id=None):
         if emp_id:
             try:
@@ -1463,7 +1474,8 @@ class MobilePhoneSubsidy_empAPIView(APIView):
                 "pos_id": emp.pos_id.pos_id,
                 "pos_name": emp.pos_id.name,
                 "mb_id": subsidy.mb_id,
-                "grant": subsidy.grant
+                "grant": subsidy.grant,
+                "status": self.get_status(emp)
             }
             return Response(result, status=status.HTTP_200_OK)
 
@@ -1481,7 +1493,8 @@ class MobilePhoneSubsidy_empAPIView(APIView):
                     "pos_id": emp.pos_id.pos_id,
                     "pos_name": emp.pos_id.name,
                     "mb_id": subsidy.mb_id,
-                    "grant": subsidy.grant
+                    "grant": subsidy.grant,
+                    "status": self.get_status(emp)
                 })
 
         return Response(data, status=status.HTTP_200_OK)
@@ -1491,6 +1504,8 @@ class income_taxViewSet(viewsets.ModelViewSet):
     serializer_class = income_taxSerializer
 
 class ovtimeWorkView(APIView):
+    # authentication_classes = [CustomJWTAuthentication]
+    # permission_classes = [IsAuthenticated]  # 👈 ແກ້ spelling
     def get(self, request, ot_id=None):
         try:
             if ot_id:
@@ -1506,24 +1521,25 @@ class ovtimeWorkView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
-        serializer = OvertimeWorkSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def put(self, request, ot_id=None):
+        try:
+            serializer = get_OvertimeWorkSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(recorder=request.user)  # 👈 ບັນທຶກ user ທີ່ login
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def put(self, request, ot_id):
         try:
             overtime = OvertimeWork.objects.get(ot_id=ot_id)
-            serializer = get_OvertimeWorkSerializer(overtime, data=request.data)
+            serializer = get_OvertimeWorkSerializer(overtime, data=request.data, partial=True)
             if serializer.is_valid():
-                serializer.save()
+                serializer.save(recorder=request.user)  # 👈 update recorder ເປັນຄົນປັບປຸງ
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except OvertimeWork.DoesNotExist:
             return Response({"error": "Overtime work not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def patch(self, request, ot_id=None):
         try:
@@ -1699,6 +1715,17 @@ class evaluation_scoreViewSet(viewsets.ModelViewSet):
     queryset = evaluation_score.objects.all().order_by('es_id')
     serializer_class = evaluation_scoreSerializer
 class evaluation_score_empAPIView(APIView):
+    def get_status(self, obj):
+        now = timezone.now()
+        exists = evaluation_score_emp_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+    
     def get(self, request, emp_id=None):
         if emp_id:
             items = evaluation_score_emp.objects.filter(emp_id=emp_id)
@@ -1716,6 +1743,7 @@ class evaluation_score_empAPIView(APIView):
             salary_record = Salary.objects.filter(pos_id=pos).first()
             salary = salary_record.SalaryGrade if salary_record else 0
             today = date.today()
+            get_status = self.get_status(obj)
             try:
                 calclate_str = obj.es_id.calclate if obj.es_id else 0
                 total_amount = Decimal(calclate_str) * Decimal(salary)
@@ -1732,7 +1760,8 @@ class evaluation_score_empAPIView(APIView):
                 "salary": salary,
                 "es_type": obj.es_id.es_type if obj.es_id else "",
                 "calclate": obj.es_id.calclate if obj.es_id else "",
-                "total_amount": total_amount
+                "total_amount": total_amount,
+                "status": get_status
             })
             results.append(data)
 
@@ -1789,65 +1818,65 @@ class UpdateAllJobMobilityAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UniformView(APIView):
+    def get_status(self, emp_id):
+        """ตรวจสอบว่าพนักงานบันทึกข้อมูลในเดือน/ปี ปัจจุบันแล้วหรือยัง"""
+        now = timezone.now()
+        exists = uniform_history.objects.filter(
+            emp_id=emp_id,
+            date__year=now.year,
+            date__month=now.month
+        ).exists() or uniform_history.objects.filter(
+            emp_id=emp_id,
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+
+    def build_result(self, data):
+        """ฟังก์ชันช่วย สร้าง dict response"""
+        if not data.uniform_price or not data.emp_id:
+            return None
+
+        formal_suit = Decimal(data.uniform_price.formal_suit or 0)
+        emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
+        amount_uni = Decimal(data.amount_uni or 0)
+        amount_sui = Decimal(data.amount_sui or 0)
+        total_amount = (emp_uniform * amount_uni) + (formal_suit * amount_sui)
+        status_value = self.get_status(data.emp_id.emp_id)
+
+        return {
+            "uni_id": data.uni_id,
+            "date": data.date or date.today(),
+            "emp_id": data.emp_id.emp_id,
+            "emp_name": data.emp_id.lao_name,
+            "pos_id": data.emp_id.pos_id.pos_id if data.emp_id.pos_id else None,
+            "pos_name": data.emp_id.pos_id.name if data.emp_id.pos_id else "",
+            "formal_suit": str(formal_suit),
+            "amount_sui": float(amount_sui),
+            "emp_uniform": str(emp_uniform),
+            "amount_uni": float(amount_uni),
+            "total_amount": float(total_amount),
+            "status": status_value
+        }
+
     def get(self, request, uni_id=None):
         try:
             if uni_id:
                 data = uniform.objects.select_related('uniform_price', 'emp_id__pos_id').get(uni_id=uni_id)
-                if not data.uniform_price or not data.emp_id:
+                result = self.build_result(data)
+                if not result:
                     return Response({'error': 'Incomplete data'}, status=status.HTTP_400_BAD_REQUEST)
-
-                # ແປເປັນ Decimal ປ້ອງກັນ error
-                formal_suit = Decimal(data.uniform_price.formal_suit or 0)
-                emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
-                amount_uni = Decimal(data.amount_uni or 0)
-                amount_sui = Decimal(data.amount_sui or 0)
-
-                total_amount = (emp_uniform * amount_uni) + (formal_suit * amount_sui)
-
-                result = {
-                    "uni_id": data.uni_id,
-                    "date": data.date or date.today(),
-                    "emp_id": data.emp_id.emp_id,
-                    "emp_name": data.emp_id.lao_name,
-                    "pos_id": data.emp_id.pos_id.pos_id if data.emp_id.pos_id else None,
-                    "pos_name": data.emp_id.pos_id.name if data.emp_id.pos_id else "",
-                    "formal_suit": str(formal_suit),
-                    "amount_sui": float(amount_sui),
-                    "emp_uniform": str(emp_uniform),
-                    "amount_uni": float(amount_uni),
-                    "total_amount": float(total_amount)
-                }
                 return Response(result, status=status.HTTP_200_OK)
 
-            else:
-                all_data = uniform.objects.select_related('uniform_price', 'emp_id__pos_id').all().order_by("emp_id__pos_id")
-                results = []
-                for data in all_data:
-                    if not data.uniform_price or not data.emp_id:
-                        continue  # ຂ້າມລາຍການທີ່ຂໍ້ມູນບໍ່ຄົບ
-
-                    formal_suit = Decimal(data.uniform_price.formal_suit or 0)
-                    emp_uniform = Decimal(data.uniform_price.emp_uniform or 0)
-                    amount_uni = Decimal(data.amount_uni or 0)
-                    amount_sui = Decimal(data.amount_sui or 0)
-
-                    total_amount = (emp_uniform * amount_uni) + (formal_suit * amount_sui)
-
-                    results.append({
-                        "uni_id": data.uni_id,
-                        "date": data.date or date.today(),
-                        "emp_id": data.emp_id.emp_id,
-                        "emp_name": data.emp_id.lao_name,
-                        "pos_id": data.emp_id.pos_id.pos_id if data.emp_id.pos_id else None,
-                        "pos_name": data.emp_id.pos_id.name if data.emp_id.pos_id else "",
-                        "formal_suit": str(formal_suit),
-                        "amount_sui": float(amount_sui),
-                        "emp_uniform": str(emp_uniform),
-                        "amount_uni": float(amount_uni),
-                        "total_amount": float(total_amount)
-                    })
-                return Response(results, status=status.HTTP_200_OK)
+            # ดึงทั้งหมด
+            all_data = uniform.objects.select_related('uniform_price', 'emp_id__pos_id').all().order_by("emp_id__pos_id")
+            results = [self.build_result(data) for data in all_data if self.build_result(data)]
+            return Response(results, status=status.HTTP_200_OK)
 
         except uniform.DoesNotExist:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1956,6 +1985,7 @@ class Overtime_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
     def post(self, request, *args, **kwargs):
         data = request.data
         duplicates = []
@@ -2651,6 +2681,17 @@ class test_monly(APIView):
             t5 = income_tax.objects.filter(tax_id=5).first()
             t6 = income_tax.objects.filter(tax_id=6).first()
             return (income - (t1.calculation_base + t2.calculation_base + t3.calculation_base + t4.calculation_base + t5.calculation_base)) * t6.tariff if t6 else Decimal('0')
+        
+    def get_status(self, obj):
+        now = timezone.now()
+        exists = monthly_payment_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
 
     def get(self, request, emp_id=None):
         try:
@@ -2736,7 +2777,7 @@ class test_monly(APIView):
 
                 salary_payment = Decimal(income_after_tax) + Decimal(child_subsidy_total) + Decimal(health_subsidy) - Decimal(saving_total) + Decimal(loan_194)
                 monthly_income = Decimal(fuel) + Decimal(other_income) + Decimal(salary_payment)
-
+                get_status = self.get_status(emp)
                 data.append({
                     "date": today,
                     "emp_id": emp.emp_id,
@@ -2783,8 +2824,435 @@ class test_monly(APIView):
                     "saving_total": saving_total,
                     "salary_payment": salary_payment,
                     "monthly_income": monthly_income,
+                    "status": get_status,
                 })
 
             return Response(data, status=status.HTTP_200_OK)
         except Exception as exc:
             return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+# sum total history
+
+
+from django.db.models import Sum
+
+class sum_total_Overtime_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = Overtime_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_ot=Sum("total_ot"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_ot=Sum("total_ot"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_ot=Sum("total_ot"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_ot": qs.aggregate(total=Sum("total_ot"))["total"] or 0}
+        return Response(data)
+
+class sum_colpolicy_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = colpolicy_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_payment=Sum("total_payment"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_payment=Sum("total_payment"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_payment=Sum("total_payment"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_payment": qs.aggregate(total=Sum("total_payment"))["total"] or 0}
+        return Response(data)
+    
+class sum_fuel_payment_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = fuel_payment_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_fuel=Sum("total_fuel"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_fuel=Sum("total_fuel"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_fuel=Sum("total_fuel"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_fuel": qs.aggregate(total=Sum("total_fuel"))["total"] or 0}
+        return Response(data)
+    
+class sum_specialday_emp_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = specialday_emp_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"grant": qs.aggregate(total=Sum("grant"))["total"] or 0}
+        return Response(data)
+    
+class sum_MobilePhoneSubsidy_emp_History_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = MobilePhoneSubsidy_emp_History.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(grant=Sum("grant"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"grant": qs.aggregate(total=Sum("grant"))["total"] or 0}
+        return Response(data)
+    
+class sum_saving_cooperative_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = saving_cooperative_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_Saving=Sum("total_Saving"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_Saving=Sum("total_Saving"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_Saving=Sum("total_Saving"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_Saving": qs.aggregate(total=Sum("total_Saving"))["total"] or 0}
+        return Response(data)
+    
+class sum_uniform_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = uniform_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_amount": qs.aggregate(total=Sum("total_amount"))["total"] or 0}
+        return Response(data)
+    
+class sum_evaluation_score_emp_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = evaluation_score_emp_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(total_amount=Sum("total_amount"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"total_amount": qs.aggregate(total=Sum("total_amount"))["total"] or 0}
+        return Response(data)
+    
+class sum_salary_payment_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = monthly_payment_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(salary_payment=Sum("salary_payment"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(salary_payment=Sum("salary_payment"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(salary_payment=Sum("salary_payment"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"salary_payment": qs.aggregate(total=Sum("salary_payment"))["total"] or 0}
+        return Response(data)
+    
+class sum_monthly_income_history_view(APIView):
+    def get(self, request):
+        group_by = request.query_params.get("group_by")  # emp_id, month, year
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+        emp_id = request.query_params.get("emp_id")
+        emp_name = request.query_params.get("emp_name")
+
+        qs = monthly_payment_history.objects.all()
+        if year:
+            qs = qs.filter(date__year=year)
+        else:
+            year = timezone.now().year
+            qs = qs.filter(date__year=year)
+        if month:
+            qs = qs.filter(date__month=month)
+        if emp_id:
+            qs = qs.filter(emp_id=emp_id)
+        if emp_name:
+            qs = qs.filter(emp_name__icontains=emp_name)
+        if group_by == "emp_id":
+            data = (
+                qs.values("emp_id", "emp_name")
+                  .annotate(monthly_income=Sum("monthly_income"))
+                  .order_by("emp_id")
+            )
+        elif group_by == "month":
+            data = (
+                qs.values("date__month")
+                  .annotate(monthly_income=Sum("monthly_income"))
+                  .order_by("date__month")
+            )
+        elif group_by == "year":
+            data = (
+                qs.values("date__year")
+                  .annotate(monthly_income=Sum("monthly_income"))
+                  .order_by("date__year")
+            )
+        else:
+            data = {"monthly_income": qs.aggregate(total=Sum("monthly_income"))["total"] or 0}
+        return Response(data)

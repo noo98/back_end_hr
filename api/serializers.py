@@ -10,8 +10,7 @@ import datetime
 import math
 import re
 from decimal import Decimal
-from django.db.models import Max
-from rest_framework import serializers
+from django.db.models import Max # type: ignore
 from .models import (
     Position, Salary, SubsidyPosition, SubsidyYear,SpecialDay_Position,
     FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
@@ -25,8 +24,10 @@ from .models import (Overtime_history,colpolicy_history,fuel_payment_history,sav
     #         return datetime.strptime(data, '%d%m%Y').date()
     #     except ValueError:
     #         raise serializers.ValidationError('Date must be in ddmmyy format (e.g. 200525)')
-
-
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
 class SystemUserSerializer(serializers.ModelSerializer):
     # password = serializers.CharField(write_only=True, required=False)  # 👈 ป้องกัน error และไม่ส่งกลับ
     pic = serializers.ImageField(required=False, allow_null=True)      # 👈 ป้องกัน error เวลาไม่ส่งรูป
@@ -378,6 +379,7 @@ class fuel_paymentSerializer(serializers.ModelSerializer):
     date = serializers.SerializerMethodField()
     fuel_price = serializers.SerializerMethodField()
     total_fuel = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     def get_fuel_subsidy(self, obj):
         if not obj.emp_id or not obj.emp_id.pos_id:
             return None
@@ -405,9 +407,25 @@ class fuel_paymentSerializer(serializers.ModelSerializer):
         if fuel_subsidy:
             return fuel_subsidy.total_fuel
         return None
+    def get_status(self, obj):
+        """ເຊັກຈາກ fuel_payment_history ວ່າມີບັນທຶກໃນເດືອນປັດຈຸບັນບໍ່"""
+        from django.utils import timezone
+        from .models import fuel_payment_history   # import ຂ້າງໃນ ຫຼື ໄວ້ດ້ານເທິງກໍ່ໄດ້
+
+        now = timezone.now()
+
+        exists = fuel_payment_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
+    
     class Meta:
         model = Fuel_payment
-        fields = ['fp_id','date','emp_id','emp_name','pos_id','position','fuel_subsidy','fuel_price','total_fuel']
+        fields = ['fp_id','date','emp_id','emp_name','pos_id','position','fuel_subsidy','fuel_price','total_fuel','status']
 
 class AnnualPerformanceGrantSerializer(serializers.ModelSerializer):
     
@@ -435,18 +453,41 @@ class Specialday_empserialiser(serializers.ModelSerializer):
     date = serializers.SerializerMethodField()  # ເພີ່ມ field "today" ຢູ່ລະດັບ root
 
     def get_special_day(self, obj):
+        from django.utils import timezone
+        now = timezone.now()
         try:
             employee = Employee_lcic.objects.get(emp_id=obj.emp_id)
             if employee.pos_id:
-                specials = SpecialDay_Position.objects.filter(pos_id=employee.pos_id).select_related("special_day")
-                return [
-                    {
+                specials = (
+                    SpecialDay_Position.objects
+                    .filter(pos_id=employee.pos_id)
+                    .select_related("special_day")
+                )
+
+                results = []
+                for s in specials:
+                    if not s.special_day:
+                        continue
+
+                    # ເຊັກວ່າເຄີຍບັນທຶກໃນ specialday_emp_history ຫຼືບໍ່
+                    exists = specialday_emp_history.objects.filter(
+                        emp_id=obj.emp_id,
+                        sdg_id=s.special_day.sdg_id,
+                        date_insert__year=now.year,
+                        date_insert__month=now.month
+                    ).exists()
+
+                    results.append({
                         "sdg_id": s.special_day.sdg_id,
                         "sdg_name": s.special_day.occasion_name,
-                        "grant": s.grant
-                    }
-                    for s in specials if s.special_day
-                ]
+                        "grant": s.grant,
+                        "status": (
+                            f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+                            if exists else
+                            f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+                        )
+                    })
+                return results
         except Employee_lcic.DoesNotExist:
             return []
         return []
@@ -478,6 +519,7 @@ class col_policySerializer(serializers.ModelSerializer):
     total_amount = serializers.SerializerMethodField()
     total_payment = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     def _get_job_mobility_data(self, obj):
         if obj.emp_id and obj.emp_id.pos_id:
@@ -508,12 +550,24 @@ class col_policySerializer(serializers.ModelSerializer):
         total = self.get_total_amount(obj)
         policy = self.get_jm_policy(obj)
         return total + policy if policy else total
-
+    def get_status(self, obj):
+        """ເຊັກຈາກ colpolicy_history ວ່າມີບັນທຶກໃນເດືອນປັດຈຸບັນບໍ່"""
+        from django.utils import timezone
+        from .models import colpolicy_history   # import ຂ້າງໃນ ຫຼື ໄວ້ດ້ານເທິງກໍ່ໄດ້
+        now = timezone.now()
+        exists = colpolicy_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
+    
     class Meta:
         model = col_policy
         fields = ['col_id','date', 'emp_id', 'date', 'pos_id',
                   'number_of_days', 'amount_per_day', 'total_amount',
-                  'jm_policy', 'total_payment']
+                  'jm_policy', 'total_payment', 'status']
 
 class OvertimeWorkSerializer(serializers.ModelSerializer):
     class Meta:
@@ -530,6 +584,8 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
     position = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
     pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
     emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
+    # recorder_name = serializers.CharField(source='recorder.username', read_only=True)
+    status = serializers.SerializerMethodField()
 
     def get_salary(self, obj):
         employee = obj.emp_id
@@ -583,6 +639,22 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
         instance.total_ot = self.calculate_total_ot(instance)
         instance.save()
         return instance
+    
+    def get_status(self, obj):
+        """ເຊັກຈາກ Overtime_history ວ່າມີບັນທຶກໃນເດືອນປັດຈຸບັນບໍ່"""
+        from django.utils import timezone
+        from .models import Overtime_history   # import ຂ້າງໃນ ຫຼື ໄວ້ດ້ານເທິງກໍ່ໄດ້
+
+        now = timezone.now()
+
+        exists = Overtime_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
 
     class Meta:
         model = OvertimeWork
@@ -605,14 +677,18 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
             'value_300',
             'value_350',
             'total_ot',
+            'status',
+            # 'recorder',
+            # 'recorder_name',
         ]
-        
+
 class Saving_cooperativeSerializer(serializers.ModelSerializer):
     emp_name = serializers.CharField(source='emp_id.lao_name', read_only=True)
     total_Saving = serializers.SerializerMethodField()
     pos_id = serializers.IntegerField(source='emp_id.pos_id.pos_id', read_only=True)
     pos_name = serializers.CharField(source='emp_id.pos_id.name', read_only=True)
     date = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     def get_total_Saving(self, obj):
         loan = obj.loan_amount or 0
         interest = obj.interest or 0
@@ -620,9 +696,22 @@ class Saving_cooperativeSerializer(serializers.ModelSerializer):
         return loan + interest + deposit
     def get_date(self, obj):
         return date.today().strftime("%Y-%m-%d")
+    def get_status(self, obj):
+        """ເຊັກຈາກ saving_cooperative_history ວ່າມີບັນທຶກໃນເດືອນປັດຈຸບັນບໍ່"""
+        from django.utils import timezone
+        from .models import saving_cooperative_history   # import ຂ້າງໃນ ຫຼື ໄວ້ດ້ານເທິງກໍ່ໄດ້
+        now = timezone.now()
+        exists = saving_cooperative_history.objects.filter(
+            date_insert__year=now.year,
+            date_insert__month=now.month
+        ).exists()
+
+        if exists:
+            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
     class Meta:
         model = Saving_cooperative
-        fields = ['sc_id', 'date', 'emp_id', 'emp_name','pos_id','pos_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194','total_Saving']
+        fields = ['sc_id', 'date', 'emp_id', 'emp_name','pos_id','pos_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194','total_Saving','status']
 
 class income_taxSerializer(serializers.ModelSerializer):
     class Meta:
@@ -946,7 +1035,9 @@ class get_Overtime_historyserializer(serializers.ModelSerializer):
         return pos_name.name if pos_name else None
     class Meta:
         model = Overtime_history
-        fields = ['date','ot_id', 'emp_id', 'emp_name','pos_name', 'csd_evening', 'csd_night', 'hd_mor_after', 'hd_evening', 'hd_night','salary','value_150', 'value_200', 'value_250', 'value_300', 'value_350', 'total_ot']
+        fields = ['date','ot_id', 'emp_id', 'emp_name','pos_name', 'csd_evening', 'csd_night', 
+                  'hd_mor_after', 'hd_evening', 'hd_night','salary','value_150', 'value_200', 
+                  'value_250', 'value_300', 'value_350', 'total_ot','recorder','recorder_name']
 
 class post_colpolicy_historyserializer(serializers.ModelSerializer):
     class Meta:

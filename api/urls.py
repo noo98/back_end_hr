@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserView,LoginView, reset_all_saving_cooperatives
+from .views import UserView,LoginView, reset_all_saving_cooperatives, sum_MobilePhoneSubsidy_emp_History_view, sum_colpolicy_history_view, sum_evaluation_score_emp_history_view, sum_fuel_payment_history_view, sum_monthly_income_history_view, sum_salary_payment_history_view, sum_saving_cooperative_history_view, sum_specialday_emp_history_view, sum_total_Overtime_history_view, sum_uniform_history_view
 from .views import Employee_lcicView,EmployeeInfoAPI,UpdateAllJobMobilityAPIView
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_deleteView
 from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
@@ -189,5 +189,21 @@ urlpatterns = [
     path('mon_ly_history/<int:emp_id>/', monthly_payment_historyView.as_view(), name='monthly_payment_history_detail'),
 
     path('sdg_filter/', SpecialDayPositionFilterAPIView.as_view(), name='specialday-filter'),
+
+    # path('status_ot/', CheckOvertimeHistoryView.as_view(), name='specialday-filter'),
+
+    # sum total ot current month
+
+    path('sum_ot/', sum_total_Overtime_history_view.as_view(), name='total-sum'),
+    path('sum_colpolicy/', sum_colpolicy_history_view.as_view(), name='total-sum'),
+    path('sum_fuel/', sum_fuel_payment_history_view.as_view(), name='total-sum'),
+    path('sum_specialday/', sum_specialday_emp_history_view.as_view(), name='total-sum'),
+    path('sum_Mobile/', sum_MobilePhoneSubsidy_emp_History_view.as_view(), name='total-sum'),
+    path('sum_saving/', sum_saving_cooperative_history_view.as_view(), name='total-sum'),
+    path('sum_uniform/', sum_uniform_history_view.as_view(), name='total-sum'),
+    path('sum_score/', sum_evaluation_score_emp_history_view.as_view(), name='total-sum'),
+    path('salary_payment/', sum_salary_payment_history_view.as_view(), name='total-sum'),
+    path('monthly_income/', sum_monthly_income_history_view.as_view(), name='total-sum'),
+
 
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
