@@ -1,3 +1,4 @@
+from time import timezone
 from rest_framework import serializers # type: ignore
 from .models import Employee_lcic
 # from .models import Documentout,Documentin
@@ -445,15 +446,16 @@ class Specialday_PositionSerializer(serializers.ModelSerializer):
         model = SpecialDay_Position
         fields = ['id','sdg_id','special_day','pos_id','pos_name','grant']
 
+from django.utils import timezone
 from datetime import date
 
 class Specialday_empserialiser(serializers.ModelSerializer):
     pos_name = serializers.CharField(source='pos_id.name', read_only=True)
     special_day = serializers.SerializerMethodField()
-    date = serializers.SerializerMethodField()  # ເພີ່ມ field "today" ຢູ່ລະດັບ root
+    date = serializers.SerializerMethodField()
+    gender = serializers.CharField(source='Gender', read_only=True)  # ✅ map จาก field Gender ของ model
 
     def get_special_day(self, obj):
-        from django.utils import timezone
         now = timezone.now()
         try:
             employee = Employee_lcic.objects.get(emp_id=obj.emp_id)
@@ -469,7 +471,10 @@ class Specialday_empserialiser(serializers.ModelSerializer):
                     if not s.special_day:
                         continue
 
-                    # ເຊັກວ່າເຄີຍບັນທຶກໃນ specialday_emp_history ຫຼືບໍ່
+                    # ❌ ຖ້າ gender = ຊາຍ ແລະ sdg_id = 3 ຂ້າມ
+                    if employee.Gender == "ຊາຍ" and s.special_day.sdg_id == 3:
+                        continue
+
                     exists = specialday_emp_history.objects.filter(
                         emp_id=obj.emp_id,
                         sdg_id=s.special_day.sdg_id,
@@ -497,7 +502,15 @@ class Specialday_empserialiser(serializers.ModelSerializer):
 
     class Meta:
         model = Employee_lcic
-        fields = ['date', 'emp_id', 'lao_name', 'pos_id', 'pos_name', 'special_day']
+        fields = [
+            'date',
+            'emp_id',
+            'lao_name',
+            'gender',     # ✅ now matches the serializer field
+            'pos_id',
+            'pos_name',
+            'special_day'
+        ]
 
 class MobilePhoneSubsidySerializer(serializers.ModelSerializer):
     pso_name = serializers.CharField(source='pos_id.name', read_only=True)
@@ -1058,7 +1071,7 @@ class get_colpolicy_historyserializer(serializers.ModelSerializer):
         return pos_name.name if pos_name else None
     class Meta:
         model = colpolicy_history
-        fields = ['col_id', 'date','emp_id','emp_name', 'pos_name', 'number_of_days', 'amount_per_day', 'total_amount', 'jm_policy', 'total_payment']
+        fields = ['col_id', 'date','emp_id','emp_name', 'pos_name', 'number_of_days', 'amount_per_day', 'total_amount', 'jm_policy', 'total_payment','recorder','recorder_name']
 
 class post_specialday_emp_historyserializer(serializers.ModelSerializer):
     class Meta:
@@ -1085,7 +1098,7 @@ class post_fuel_payment_historyserializer(serializers.ModelSerializer):
 class get_fuel_payment_historyserializer(serializers.ModelSerializer):
     class Meta:
         model = fuel_payment_history
-        fields = ['fp_id', 'date', 'emp_name', 'position', 'fuel_subsidy', 'fuel_price', 'total_fuel']
+        fields = ['fp_id', 'date', 'emp_name', 'position', 'fuel_subsidy', 'fuel_price', 'total_fuel','recorder','recorder_name']
 
 class post_saving_cooperative_historyserializer(serializers.ModelSerializer):
     class Meta:
@@ -1100,7 +1113,7 @@ class get_saving_cooperative_historyserializer(serializers.ModelSerializer):
         return emp_name.lao_name
     class Meta:
         model = saving_cooperative_history
-        fields = ['id', 'date', 'emp_id', 'emp_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194', 'total_Saving']
+        fields = ['id', 'date', 'emp_id', 'emp_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194', 'total_Saving','recorder','recorder_name']
 
 class post_uniform_historyserializer(serializers.ModelSerializer):
     class Meta:

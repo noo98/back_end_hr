@@ -1269,7 +1269,7 @@ class sidebar_View(APIView):
             return Response(serializer.data)
 
 from .serializers import UpdateDocSerializer
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404 # type: ignore
 
 class UpdateDocumentStatus(APIView):
     def patch(self, request, doc_id):
@@ -2835,7 +2835,7 @@ class test_monly(APIView):
 # sum total history
 
 
-from django.db.models import Sum
+from django.db.models import Sum # type: ignore
 
 class sum_total_Overtime_history_view(APIView):
     def get(self, request):
