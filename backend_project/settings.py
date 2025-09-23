@@ -123,10 +123,10 @@ WSGI_APPLICATION = 'backend_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',  
-        'NAME': 'hr_dev',                      
+        'NAME': 'hr_dev_1',                      
         'USER': 'postgres',                       
         'PASSWORD': 'Lcic@123',                  
-        'HOST': '192.168.45.231',                      
+        'HOST': '192.168.45.52',                      
         'PORT': '5432',
         'OPTIONS': {'client_encoding': 'UTF8'},            
          'TEST': {
