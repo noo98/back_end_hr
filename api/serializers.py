@@ -416,13 +416,13 @@ class fuel_paymentSerializer(serializers.ModelSerializer):
         now = timezone.now()
 
         exists = fuel_payment_history.objects.filter(
-            date_insert__year=now.year,
+            
             date_insert__month=now.month
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
     
     class Meta:
         model = Fuel_payment
@@ -478,7 +478,6 @@ class Specialday_empserialiser(serializers.ModelSerializer):
                     exists = specialday_emp_history.objects.filter(
                         emp_id=obj.emp_id,
                         sdg_id=s.special_day.sdg_id,
-                        date_insert__year=now.year,
                         date_insert__month=now.month
                     ).exists()
 
@@ -487,11 +486,12 @@ class Specialday_empserialiser(serializers.ModelSerializer):
                         "sdg_name": s.special_day.occasion_name,
                         "grant": s.grant,
                         "status": (
-                            f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
+                            f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
                             if exists else
-                            f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+                            f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
                         )
                     })
+
                 return results
         except Employee_lcic.DoesNotExist:
             return []
@@ -569,12 +569,11 @@ class col_policySerializer(serializers.ModelSerializer):
         from .models import colpolicy_history   # import ຂ້າງໃນ ຫຼື ໄວ້ດ້ານເທິງກໍ່ໄດ້
         now = timezone.now()
         exists = colpolicy_history.objects.filter(
-            date_insert__year=now.year,
             date_insert__month=now.month
         ).exists()
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
     
     class Meta:
         model = col_policy
@@ -666,8 +665,8 @@ class get_OvertimeWorkSerializer(serializers.ModelSerializer):
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
 
     class Meta:
         model = OvertimeWork
@@ -720,8 +719,8 @@ class Saving_cooperativeSerializer(serializers.ModelSerializer):
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບໍ່ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
     class Meta:
         model = Saving_cooperative
         fields = ['sc_id', 'date', 'emp_id', 'emp_name','pos_id','pos_name', 'loan_amount', 'interest', 'deposit', 'Loan_deduction_194','total_Saving','status']

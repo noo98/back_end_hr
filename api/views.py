@@ -1453,8 +1453,8 @@ class MobilePhoneSubsidy_empAPIView(APIView):
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
     def get(self, request, emp_id=None):
         if emp_id:
             try:
@@ -1723,8 +1723,8 @@ class evaluation_score_empAPIView(APIView):
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
     
     def get(self, request, emp_id=None):
         if emp_id:
@@ -1825,17 +1825,15 @@ class UniformView(APIView):
         now = timezone.now()
         exists = uniform_history.objects.filter(
             emp_id=emp_id,
-            date__year=now.year,
             date__month=now.month
         ).exists() or uniform_history.objects.filter(
             emp_id=emp_id,
-            date_insert__year=now.year,
             date_insert__month=now.month
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
 
     def build_result(self, data):
         """ฟังก์ชันช่วย สร้าง dict response"""
@@ -1887,7 +1885,7 @@ class UniformView(APIView):
         # ກວດສອບວ່າ emp_id ມີ uniform ຢູ່ແລ້ວບໍ່
         if uniform.objects.filter(emp_id=emp_id).exists():
             return Response(
-                {'error': 'ພະນັກງານຄົນນີ້ມີ uniform ຢູ່ແລ້ວ'},
+                {'error': 'ພະນັກງານຄົນນີ້ມີຢູ່ແລ້ວ'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -2229,7 +2227,7 @@ class MobilePhoneSubsidy_emp_HistoryView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
+                'error': 'ເດືອນນີ້ມີການຄິດໄລ່ແລ້ວ!!',
                 'duplicates': duplicates
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2278,7 +2276,7 @@ class saving_cooperative_historyView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
+                'error': 'ເດືອນນີ້ມີການຄິດໄລ່ແລ້ວ!!',
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_saving_cooperative_historyserializer(data=data, many=True)
@@ -2344,7 +2342,7 @@ class monthly_payment_historyView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
+                'error': 'ເດືອນນີ້ມີການຄິດໄລ່ແລ້ວ!!',
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_monthly_payment_historyserializer(data=data, many=True)
@@ -2396,8 +2394,8 @@ class uniform_historyView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
-            }, status=status.HTTP_40_BAD_REQUEST)
+                'error': 'ໄດ້ມີການຄິດໄລ່ແລ້ວ!!',
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_uniform_historyserializer(data=data, many=True)
         if serializer.is_valid():
@@ -2444,7 +2442,7 @@ class evaluation_score_emp_historyView(APIView):
 
         if duplicates:
             return Response({
-                'error': 'ມີຂໍ້ມູນຊ້ຳກັນໃນຖານຂໍ້ມູນ ເດືອນນີ້ໄດ້ບັນທຶກແລ້ວ!!',
+                'error': 'ໄດ້ມີການຄິດໄລ່ແລ້ວ!!',
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = post_evaluation_score_emp_historyserializer(data=data, many=True)
@@ -2685,13 +2683,13 @@ class test_monly(APIView):
     def get_status(self, obj):
         now = timezone.now()
         exists = monthly_payment_history.objects.filter(
-            date_insert__year=now.year,
+            
             date_insert__month=now.month
         ).exists()
 
         if exists:
-            return f"ບັນທຶກແລ້ວ (ເດືອນ {now.month} ປີ {now.year})"
-        return f"ຍັງບໍ່ທັນບັນທຶກ (ເດືອນ {now.month} ປີ {now.year})"
+            return f"ຄິດໄລ່(ເດືອນ {now.month}ແລ້ວ)"
+        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
 
     def get(self, request, emp_id=None):
         try:
