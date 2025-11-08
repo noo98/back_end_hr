@@ -89,13 +89,6 @@ class MainMenu(models.Model):
     def __str__(self):
         return self.main_name
 
-class Sidebar(models.Model):
-    sid_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
-    url = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.name
 
 class Employee_lcic(models.Model):
     emp_id = models.AutoField(primary_key=True)  # ລະຫັດພະນັກງານ
@@ -105,7 +98,7 @@ class Employee_lcic(models.Model):
     Gender = models.CharField(max_length=100)  #ເພດ
     birth_date = models.CharField(max_length=100, blank=True, null=True) # ວັນເດືອນປີເກີດ
     status = models.CharField(max_length=20)  # ສະຖານະພາບ (ເຊັ່ນ ໂສດ, ແຕ່ງງານ)
-    Department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
     pos_id = models.ForeignKey('Position', on_delete=models.CASCADE,null=True,blank=True) # ຕຳແໜ່ງ
     year_entry = models.CharField(null=True)  # ປີເຂົ້າເຮັດວຽກ
     age_entry = models.CharField(null=True,default=0)
@@ -113,8 +106,8 @@ class Employee_lcic(models.Model):
     phone = models.CharField(max_length=20)  # ເບີໂທ
     pic = models.ImageField(upload_to='emp_img/',null=True)  # ຮູບໂປຣຟາຍ (ທາງເລືອກ)
 
-    def __str__(self):
-        return f"{self.emp_id} - {self.eng_name} ({self.nickname})"
+    class Meta:
+        ordering = ['-pos_id', 'lao_name']
 
     def save(self, *args, **kwargs):
         if self.year_entry:
@@ -131,16 +124,7 @@ class Employee_lcic(models.Model):
                 self.age_entry = None
         super().save(*args, **kwargs)
 
-class activity(models.Model):
-    Tname = models.CharField(max_length=50)  
-    Tdeteil = models.CharField(max_length=255)
-    Tfrom = models.CharField(max_length=100) 
-    Tplace = models.CharField(max_length=100)
-    Command = models.CharField(max_length=150)
-    Tdate = models.DateField()
 
-    def __str__(self):
-        return f"{self.number} - {self.subject}"
 
 class Department(models.Model):
     id = models.AutoField(primary_key=True)
@@ -158,14 +142,6 @@ class EducationLevel(models.Model):
     def __str__(self):
         return self.name
     
-class Status(models.Model):
-    sta_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True)
-    icon = models.CharField(max_length=255)
-    Sidebar = models.ManyToManyField('Sidebar', related_name='status_roles', blank=True)
-    def __str__(self):
-        return self.name
-    
 class Document_Status(models.Model):
     docstat_id = models.AutoField(primary_key=True)
     doc_id = models.ForeignKey('document_lcic', on_delete=models.CASCADE, related_name='statuses')
@@ -174,23 +150,6 @@ class Document_Status(models.Model):
     timestamp = models.DateTimeField(auto_now=True)
     class Meta:
         unique_together = ('doc_id', 'us_id')
-
-class Province_LCIC(models.Model):
-    Prov_ID = models.CharField(max_length=50, blank=True, null=True)
-    Province_Name = models.CharField(max_length=255, blank=True, null=True)
-    
-class District(models.Model):
-    ID = models.IntegerField(blank=True, null=True)
-    Prov_ID = models.CharField(max_length=255, blank=True, null=True)
-    Dstr_ID = models.CharField(max_length=255, blank=True, null=True)
-    District_Name = models.CharField(max_length=2500, blank=True, null=True)
-    
-class Village(models.Model):
-    ID = models.IntegerField(blank=True, null=True)
-    Prov_ID = models.CharField(max_length=255, blank=True, null=True)
-    Dstr_ID = models.CharField(max_length=255, blank=True, null=True)
-    Vill_ID = models.CharField(max_length=255, blank=True, null=True)
-    Village_Name = models.CharField(max_length=2500, blank=True, null=True)
 
 
 class Document_type(models.Model):
@@ -343,6 +302,20 @@ class Position(models.Model):
     pos_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
 
+class BankAccount(models.Model):
+    bnk_id = models.AutoField(primary_key=True)
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)
+    bnk_number = models.CharField(max_length=255, blank=True, null=True, default="")
+
+class SalaryIncrementHistory(models.Model):
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)
+    old_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    new_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, default=2.00)  # ອັດຕາເພີ່ມ
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.emp_id.lao_name} - {self.date} ({self.percentage}%)"
 
 class Salary(models.Model):
     sal_id = models.AutoField(primary_key=True)
@@ -377,11 +350,6 @@ class Fuel_payment(models.Model):
     fp_id = models.AutoField(primary_key=True)
     emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE, null=True, blank=True)
 
-class AnnualPerformanceGrant(models.Model):
-    APG_id = models.AutoField(primary_key=True)
-    level = models.CharField(max_length=50, null=True, blank=True)  # ລະດັບ
-    calculate = models.FloatField()
-
 class SpecialDayGrant(models.Model):
     sdg_id = models.AutoField(primary_key=True)
     occasion_name = models.CharField(max_length=255)
@@ -413,9 +381,18 @@ class Saving_cooperative(models.Model):
     loan_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນກູ້
     interest = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ອັດຕາດອກເບີກ
     deposit = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນຝາກ
-    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) # ຈຳນວນເງິນຫຼຸດການກູ້ 194
     date = models.DateField(auto_now=True) # ວັນທີ່ບັນທຶກ
 
+
+class Housing_loan(models.Model): 
+    hl_id = models.AutoField(primary_key=True)
+    emp_id = models.ForeignKey(Employee_lcic, on_delete=models.CASCADE)
+    payment_account = models.CharField(max_length=255, blank=True, null=True, default="")
+    cut_cost_month = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    interest = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    payment_bol = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    balance_raised = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0 )
 
 class monthly_payment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -450,7 +427,7 @@ class uniform(models.Model):
     date = models.DateField( auto_now=True, null=True, blank=True)  
     amount_uni = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     amount_sui = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) 
-    uniform_price = models.ForeignKey(uniform_price, on_delete=models.CASCADE,null=True, blank=True)
+    uniform_price = models.ForeignKey(uniform_price, on_delete=models.CASCADE,null=True, blank=True,default=1)
 
 class income_tax(models.Model):
     tax_id = models.AutoField(primary_key=True)  # ລະຫັດພາສີ
@@ -572,8 +549,22 @@ class saving_cooperative_history(models.Model):
     loan_amount = models.DecimalField(max_digits=12, decimal_places=2)
     interest = models.DecimalField(max_digits=12, decimal_places=2)
     deposit = models.DecimalField(max_digits=12, decimal_places=2)
-    Loan_deduction_194 = models.DecimalField(max_digits=12, decimal_places=2)
     total_Saving = models.DecimalField(max_digits=15, decimal_places=2)
+    recorder =models.BigIntegerField(null=True, blank=True)
+    recorder_name = models.CharField(max_length=255,null=True, blank=True)
+
+class Housing_loan_history(models.Model): 
+    id = models.AutoField(primary_key=True)
+    hl_id = models.IntegerField()
+    emp_id = models.IntegerField()
+    payment_account = models.CharField(max_length=255, blank=True, null=True, default="")
+    cut_cost_month = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    interest = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    payment_bol = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    balance_raised = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=0.0 )
+    date = models.DateField()
+    date_insert = models.DateTimeField(auto_now_add=True) 
     recorder =models.BigIntegerField(null=True, blank=True)
     recorder_name = models.CharField(max_length=255,null=True, blank=True)
 
@@ -650,7 +641,7 @@ class monthly_payment_history(models.Model):
     loan = models.FloatField(null=True, blank=True)
     interest = models.FloatField(null=True, blank=True)
     deposit = models.FloatField(null=True, blank=True)
-    loan_194 = models.FloatField(null=True, blank=True)
+    payment_bol = models.FloatField(null=True, blank=True)
     saving_total = models.FloatField(null=True, blank=True)
     salary_payment = models.FloatField(null=True, blank=True)
     monthly_income = models.FloatField(null=True, blank=True)

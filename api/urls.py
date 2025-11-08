@@ -2,11 +2,11 @@ from django.urls import path
 from .views import UserView,LoginView, reset_all_saving_cooperatives, sum_MobilePhoneSubsidy_emp_History_view, sum_colpolicy_history_view, sum_evaluation_score_emp_history_view, sum_fuel_payment_history_view, sum_monthly_income_history_view, sum_salary_payment_history_view, sum_saving_cooperative_history_view, sum_specialday_emp_history_view, sum_total_Overtime_history_view, sum_uniform_history_view
 from .views import Employee_lcicView,EmployeeInfoAPI,UpdateAllJobMobilityAPIView
 from .views import document_lcic_ListView,document_lcic_AddView,document_lcic_UpdateView,document_lcic_deleteView
-from .views import activityCreateView,activityListView,activityDeleteView,activityUpdateView,document_lcic_SearchView
-from .views import DepartmentListView,DepartmentList_idView,document_general_View,permission_lcic_View,DocumentFormatSearchView
+from .views import document_lcic_SearchView
+from .views import DepartmentListView,DepartmentList_idView,document_general_View,DocumentFormatSearchView
 from .views import Department_AddView,Department_UpdateView,Department_DeleteView,document_lcic_List_idView,document_general_SearchView
 from .views import Document_format_ListView,Document_format_AddView,Document_format_UpdateView,Document_format_DeleteView,Document_format_idView
-from .views import sidebar_View,UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView,user_empView, UniformView
+from .views import UpdateDocumentStatus,docstatus,AutoUpdateStatusDocAPIView,user_empView, UniformView
 # from .views import AssetTypeView,AssetView,CategoryView,CategorySearchView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -21,19 +21,20 @@ uniform_historyView,MobilePhoneSubsidy_empAPIView)
 
 from .views import (
     PositionViewSet, SalaryViewSet, SubsidyPositionViewSet,Saving_cooperativeViewSet,SpecialDay_empViewSet,welfareViewSet,evaluation_scoreViewSet,
-    SubsidyYearViewSet,  AnnualPerformanceGrantViewSet,FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,job_mobilityViewSet,health_allowanceViewSet,
+    SubsidyYearViewSet, FuelSubsidyView,col_policyViewSet,Fuel_pamentViewSet,job_mobilityViewSet,health_allowanceViewSet,
     SpecialDayGrantViewSet, MobilePhoneSubsidyViewSet,ovtimeWorkView,income_taxViewSet,SpecialDayViewSet,SpecialDayPositionFilterAPIView,evaluation_score_empAPIView,
     evaluation_score_emp_historyView,MobilePhoneSubsidy_emp_HistoryView, RoleListCreate, RoleRetrieveUpdateDestroy,RolePermissionListCreate, RolePermissionRetrieveUpdateDestroy,
-    MenuListCreate, MenuRetrieveUpdateDestroy,MainMenuListCreate, MainMenuRetrieveUpdateDestroy,UserMenuDetail
+    MenuListCreate, MenuRetrieveUpdateDestroy,MainMenuListCreate, MainMenuRetrieveUpdateDestroy,UserMenuDetail, Housing_loanRetrieveUpdateDestroy, Housing_loanListCreate,
+    Housing_loan_historyRetrieveUpdateDestroy, Housing_loan_historyListCreate, import_housing_loan_excel, BankAccountUpdateDestroy, BankAccountListCreate, 
+    Housing_loan_historyView, delete_all_history_by_month, status_monthly_payment_history_view,import_coopertive_excel
 )
-from .views import (test_monly)
+from .views import (payroll_monly)
 router = DefaultRouter()
 router.register(r'positions', PositionViewSet)
 router.register(r'fuel_payment', Fuel_pamentViewSet)
 router.register(r'sal', SalaryViewSet)
 router.register(r'sp', SubsidyPositionViewSet)
 router.register(r'sy', SubsidyYearViewSet)
-router.register(r'apg', AnnualPerformanceGrantViewSet)
 router.register(r'sdg', SpecialDayGrantViewSet, basename='specialday-position')
 router.register(r'sdg_emp', SpecialDay_empViewSet,basename='specialday-emp')
 router.register(r'sd', SpecialDayViewSet, basename='specialday')
@@ -58,6 +59,9 @@ urlpatterns = [
 
     path('roles/', RoleListCreate.as_view(), name='role-list-create'),
     path('roles/<int:pk>/', RoleRetrieveUpdateDestroy.as_view(), name='role-detail'),
+
+    path('bank_ac/', BankAccountListCreate.as_view(), name='BankAccount-list-create'),
+    path('bank_ac/<int:pk>/', BankAccountUpdateDestroy.as_view(), name='BankAccount-detail'),
     
     # RolePermission URLs
     path('role-permissions/', RolePermissionListCreate.as_view(), name='rolepermission-list-create'),
@@ -71,10 +75,6 @@ urlpatterns = [
     path('mainmenu/', MainMenuListCreate.as_view(), name='mainmenu-list-create'),
     path('mainmenu/<int:pk>/', MainMenuRetrieveUpdateDestroy.as_view(), name='mainmenu-detail'),
 
-    path('permission/', permission_lcic_View.as_view(), name='permission-list-create'),
-    path('permission/<int:sta_id>/', permission_lcic_View.as_view(), name='permission-update-delete'),
-
-    path('sidebar/', sidebar_View.as_view(), name='sidebar-list'),
 
     path('employee/', Employee_lcicView.as_view(), name='employees-list-create'),
     path('employee/<int:emp_id>/', Employee_lcicView.as_view(), name='employees-update-delete'),
@@ -89,11 +89,6 @@ urlpatterns = [
     path('update_status/<int:doc_id>/', UpdateDocumentStatus.as_view(), name='update-document-status'),
     path('search/document_lcic/', document_lcic_SearchView.as_view(), name='search-document'),
   
-    
-    path('list/activity/', activityListView.as_view(), name='activity-list'),
-    path('add/activity/', activityCreateView.as_view(), name='activity-create'),
-    path('delete/activity/<int:id>/',activityDeleteView.as_view(), name='activity-delete'),
-    path('update/activity/<int:id>/',activityUpdateView.as_view(), name='activity-update'),
 
     path('list/departments/', DepartmentListView.as_view(), name='department-list'),
     path('list/departments/<int:id>/', DepartmentList_idView.as_view(), name='departments-list_id'),
@@ -117,6 +112,8 @@ urlpatterns = [
     # path('personal/<int:per_id>/', PersonalEducationCreateView.as_view(), name='personal-update-delete'),
 
     path('update_doc_status/', docstatus.as_view(), name='update-document-status'),
+
+   
 
     # path('asset_types/', AssetTypeView.as_view()),
     # path('asset_types/<int:ast_id>/', AssetTypeView.as_view()),
@@ -145,10 +142,9 @@ urlpatterns = [
     path('reset_all_ot/', reset_all_overtimes, name='reset-all-overtimes'),
     path('reset_all_sc/', reset_all_saving_cooperatives, name='reset-all-saving'),
 
-    path('mon_ly/', test_monly.as_view(), name='monthly-payment-list-create'),
-    path('mon_ly/<int:emp_id>/', test_monly.as_view(), name='monthly-payment-update-delete'),
-    # path('test_monly/', test_monly.as_view(), name='test_monly-list-create'),
-    # path('test_monly/<str:emp_id>/', test_monly.as_view()),
+    path('mon_ly/', payroll_monly.as_view(), name='monthly-payment-list-create'),
+    path('mon_ly/<int:emp_id>/', payroll_monly.as_view(), name='monthly-payment-update-delete'),
+    path('sal_increase/<int:emp_id>/', payroll_monly.as_view(), name='salary-increase'),
 
     path('uniform/', UniformView.as_view()),
     path('uniform/<int:uni_id>/', UniformView.as_view()),
@@ -161,32 +157,52 @@ urlpatterns = [
 
     path('ot_history/', Overtime_historyView.as_view(), name='overtime-history-list'),
     path('ot_history/<int:emp_id>/', Overtime_historyView.as_view(), name='overtime-history-detail'),
+    path('ot_history/delete_month/<str:year_month>/', Overtime_historyView.as_view()),
 
     path('col_history/', colpolicy_historyView.as_view(), name='col_policy-history-list'),
     path('col_history/<int:emp_id>/', colpolicy_historyView.as_view(), name='col_policy-history-detail'),
+    path('col_history/delete_month/<str:year_month>/', colpolicy_historyView.as_view()),
     path('job_update_all/', UpdateAllJobMobilityAPIView.as_view(), name='update_all_job_mobility'),
+
+    path('hous_loan/', Housing_loanListCreate.as_view(), name='Hous_loan-list-create'),
+    path('hous_loan/<int:pk>/', Housing_loanRetrieveUpdateDestroy.as_view(), name='Hous_loan-detail'),
+
+    path('hous_loan_history/', Housing_loan_historyListCreate.as_view(), name='Hous_loan-list-create'),
+    path('hous_loan_history/<int:pk>/', Housing_loan_historyRetrieveUpdateDestroy.as_view(), name='Hous_loan-detail'),
+    path('hous_loan_history/delete_month/<str:year_month>/', Housing_loan_historyView.as_view()),
+    path('hous_loan_excel/', import_housing_loan_excel, name='import-housing-loan-excel'),
+    path('sc_excel/', import_coopertive_excel, name='import-coopertive-excel'),
 
     path('fuel_history/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_list'),
     path('fuel_history/<int:emp_id>/', fuel_payment_historyView.as_view(), name='fuel_subsidy_history_detail'),
+    path('fuel_history/delete_month/<str:year_month>/', fuel_payment_historyView.as_view()),
 
     path('sc_history/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_list'),
     path('sc_history/<int:emp_id>/', saving_cooperative_historyView.as_view(), name='saving_cooperative_history_detail'),
+    path('sc_history/delete_month/<str:year_month>/', saving_cooperative_historyView.as_view()),
 
 
     path('mps_emp_history/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_list'),
     path('mps_emp_history/<int:emp_id>/', MobilePhoneSubsidy_emp_HistoryView.as_view(), name='mobile_phone_subsidy_emp_history_detail'),
+    path('mps_emp_history/delete_month/<str:year_month>/', MobilePhoneSubsidy_emp_HistoryView.as_view()),
 
     path('sdg_emp_history/', specialday_emp_historyView.as_view(), name='specialday_emp_history_list'),
     path('sdg_emp_history/<int:emp_id>/', specialday_emp_historyView.as_view(), name='specialday_emp_history_detail'),
+    path('sdg_emp_history/delete_month/<str:year_month>/', specialday_emp_historyView.as_view()),
 
     path('uniform_history/', uniform_historyView.as_view(), name='uniform_history_list'),
     path('uniform_history/<int:emp_id>/', uniform_historyView.as_view(), name='uniform_history_detail'),
+    path('uniform_history/delete_month/<str:year_month>/', uniform_historyView.as_view()),
  
     path('es_emp_history/', evaluation_score_emp_historyView.as_view(), name='uniform_history_list'),
     path('es_emp_history/<int:emp_id>/', evaluation_score_emp_historyView.as_view(), name='uniform_history_detail'),
+    path('es_emp_history/delete_month/<str:year_month>/', evaluation_score_emp_historyView.as_view()),
 
     path('mon_ly_history/', monthly_payment_historyView.as_view(), name='monthly_payment_history_list'),
     path('mon_ly_history/<int:emp_id>/', monthly_payment_historyView.as_view(), name='monthly_payment_history_detail'),
+    path('mon_ly_history/delete_month/<str:year_month>/', monthly_payment_historyView.as_view()),
+    path('history/delete_all/<str:year_month>/', delete_all_history_by_month, name='delete_all_history'),
+    path('status_monthly_payment/', status_monthly_payment_history_view.as_view(), name='status-monthly-payment'),
 
     path('sdg_filter/', SpecialDayPositionFilterAPIView.as_view(), name='specialday-filter'),
 

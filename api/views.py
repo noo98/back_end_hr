@@ -7,14 +7,13 @@ from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 from .models import Employee_lcic,document_lcic
 from .serializers import EmployeeSerializer  # ສ້າງ Serializer ກ່ອນ
-from .models import activity
 from django.http import JsonResponse, Http404
 from .models import Position, Salary, SubsidyPosition, FuelSubsidy, MobilePhoneSubsidy, OvertimeWork,monthly_payment,col_policy,income_tax
 from .models import SystemUser,Fuel_payment,Saving_cooperative,welfare,evaluation_score
 from .serializers import SystemUserSerializer,DocumentFormatSerializer,DocumentFormat_Serializer,fuel_paymentSerializer,Specialday_empserialiser,welfareSerializer,evaluation_scoreSerializer
-from .serializers import activitySerializer,income_taxSerializer,Saving_cooperativeSerializer,monthly_paymentSerializer,Specialday_PositionSerializer,evaluation_score_empSerializer
+from .serializers import income_taxSerializer,Saving_cooperativeSerializer,monthly_paymentSerializer,Specialday_PositionSerializer,evaluation_score_empSerializer
 from .models import Department,Document_format,document_general,job_mobility,SpecialDay_Position,evaluation_score_emp
-from .serializers import DepartmentSerializer,document_lcicSerializer,DocumentLcic_AddSerializer,document_general_Serializer,StatusSerializer,SidebarSerializer
+from .serializers import DepartmentSerializer,document_lcicSerializer,DocumentLcic_AddSerializer,document_general_Serializer
 from .models import uniform
 from .serializers import uniformSerializer,get_uniformSerializer
 from django.contrib.auth.hashers import check_password
@@ -30,7 +29,6 @@ from datetime import datetime
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated 
 from .authentication import CustomJWTAuthentication  # Import custom authentication
-from .models import Status,Sidebar
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import (PersonalInformation, Education,SpecializedEducation, PoliticalTheoryEducation, ForeignLanguage, WorkExperience, 
@@ -49,13 +47,13 @@ get_evaluation_score_emp_historyserializer,post_evaluation_score_emp_historyseri
 from rest_framework import viewsets
 from .models import (
     Position, Salary, SubsidyPosition, SubsidyYear,
-    FuelSubsidy, AnnualPerformanceGrant, SpecialDayGrant,
-    MobilePhoneSubsidy, OvertimeWork,uniform_history
+    FuelSubsidy, SpecialDayGrant,
+    MobilePhoneSubsidy, OvertimeWork,uniform_history, BankAccount
 )
 from .serializers import (
     PositionSerializer, SalarySerializer, SubsidyPositionSerializer,get_FuelSubsidySerializer,
-    SubsidyYearSerializer, FuelSubsidySerializer, AnnualPerformanceGrantSerializer,
-    SpecialDayGrantSerializer, MobilePhoneSubsidySerializer, OvertimeWorkSerializer ##,MonthlyPayment1Serializer
+    SubsidyYearSerializer, FuelSubsidySerializer, 
+    SpecialDayGrantSerializer, MobilePhoneSubsidySerializer, OvertimeWorkSerializer ,BankAccountSerializer
 )
 import logging
 from django.db import transaction 
@@ -90,17 +88,19 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import date
+import pandas as pd
 from datetime import date as dt_date
 from .models import specialday_emp_history
 from .serializers import (
     post_specialday_emp_historyserializer,
     get_specialday_emp_historyserializer
 )
-from .models import saving_cooperative_history
+from .models import saving_cooperative_history, SalaryIncrementHistory
 from .serializers import post_saving_cooperative_historyserializer ,get_saving_cooperative_historyserializer
 from rest_framework import generics
-from .models import Role, RolePermission, Menu, MainMenu
-from .serializers import RoleSerializer, RolePermissionSerializer, MenuSerializer, MainMenuSerializer, UserMenuSerializer
+from .models import Role, RolePermission, Menu, MainMenu, Housing_loan, Housing_loan_history
+from .serializers import RoleSerializer, RolePermissionSerializer, MenuSerializer, MainMenuSerializer, UserMenuSerializer, Housing_loanSerializer, housing_loan_historyserializer
+
 
 # @csrf_exempt
 def update_view_status(request, doc_id):
@@ -179,46 +179,7 @@ class document_lcic_deleteView(APIView):
         except Exception as e:
             return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                       
-class activityListView(APIView):
-    def get(self, request):
-        # ດຶງຂໍ້ມູນທັງໝົດ
-        Document = activity.objects.all()
-        # ແປງຂໍ້ມູນໃຊ້ Serializer
-        serializer = activitySerializer(Document, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-class activityCreateView(APIView):
-    def post(self, request):
-        # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-        serializer = activitySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class activityDeleteView(APIView):
-    def delete(self, request, id):
-        try:
-            # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
-            Document = activity.objects.get(id=id)
-            Document.delete()  # ລຶບຂໍ້ມູນຈາກ Database
-            return Response({"message": f"activity with ID {id} deleted successfully."}, status=status.HTTP_200_OK)
-        except activity.DoesNotExist:
-            return Response({"error": f"activity with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-class activityUpdateView(APIView):
-    def put(self, request, id):
-        try:
-            # ຄົ້ນຫາ Employee ທີ່ຈະອັບເດດ
-            Document = activity.objects.get(id=id)
-        except activity.DoesNotExist:
-            return Response({"error": f"activity with ID {id} not found."}, status=status.HTTP_404_NOT_FOUND)
-        # ປັບປຸງຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = activitySerializer(Document, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class DepartmentListView(APIView):
     def get(self, request):
@@ -536,6 +497,304 @@ class MainMenuRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = MainMenu.objects.all()
     serializer_class = MainMenuSerializer
 
+class Housing_loanListCreate(generics.ListCreateAPIView):
+    queryset = Housing_loan.objects.all()
+    serializer_class = Housing_loanSerializer
+
+class Housing_loanRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Housing_loan.objects.all()
+    serializer_class = Housing_loanSerializer
+
+from rest_framework.decorators import api_view, parser_classes
+from decimal import Decimal, InvalidOperation
+
+def to_decimal(value):
+    """แปลงค่าให้เป็น Decimal"""
+    if value in [None, "", " ", "-", "NaN"]:
+        return Decimal("0.00")
+    try:
+        return Decimal(str(value).replace(",", "").strip())
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0.00")
+
+
+def to_string(value):
+    """แปลงค่าให้เป็น string ที่ปลอดภัย"""
+    if pd.isna(value) or value in [None, "", " "]:
+        return ""
+    return str(value).strip()
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def import_housing_loan_excel(request):
+    # print("🟦 START import_housing_loan_excel")
+
+    # ✅ ตรวจสอบว่ามีไฟล์แนบ
+    excel_file = request.FILES.get('file')
+    if not excel_file:
+        return JsonResponse({'success': False, 'message': 'ບໍ່ພົບໄຟລ໌ Excel'})
+    # print(f"✅ File received: {excel_file.name}")
+
+    # ✅ อ่าน Excel
+    df = pd.read_excel(excel_file)
+    # print(f"✅ Excel loaded successfully ({len(df)} rows)")
+
+    # ✅ ตรวจสอบว่ามีคอลัมน์ emp_name หรือ emp_id
+    if 'emp_name' not in df.columns and 'emp_id' not in df.columns:
+        return JsonResponse({
+            'success': False,
+            'message': 'ໄຟລ໌ຕ້ອງມີຄ່າ emp_name ຫຼື emp_id'
+        })
+
+    summary = {'total_rows': len(df), 'insert': 0, 'update': 0, 'errors': 0}
+    details = []
+
+    for index, row in df.iterrows():
+        emp_name = row.get('emp_name')
+        emp_id = row.get('emp_id')
+
+        try:
+            # ✅ หา Employee instance
+            employee = None
+            if emp_name and pd.notna(emp_name):
+                employee = Employee_lcic.objects.filter(lao_name=str(emp_name).strip()).first()
+            elif emp_id and pd.notna(emp_id):
+                employee = Employee_lcic.objects.filter(pk=int(emp_id)).first()
+
+            if not employee:
+                details.append({
+                    'row': index + 2,
+                    'status': 'error',
+                    'emp_name': emp_name or emp_id,
+                    'errors': {'emp_id': ['Employee not found.']}
+                })
+                summary['errors'] += 1
+                continue
+
+            # ✅ แปลงค่าตัวเลข (ป้องกัน error InvalidOperation)
+            def to_decimal(value):
+                try:
+                    if pd.isna(value):
+                        return Decimal('0.00')
+                    return Decimal(str(value).replace(',', '').strip())
+                except (InvalidOperation, ValueError):
+                    return Decimal('0.00')
+
+            data = {
+                'emp_id': employee.pk,  # ใช้ id ที่หาได้
+                'payment_account': str(row.get('payment_account', '')).strip(),
+                'cut_cost_month': to_decimal(row.get('cut_cost_month')),
+                'interest': to_decimal(row.get('interest')),
+                'payment_bol': to_decimal(row.get('payment_bol')),
+                'balance_raised': to_decimal(row.get('balance_raised')),
+                'balance': to_decimal(row.get('balance')),
+            }
+
+            # ✅ ตรวจสอบว่ามีพนักงานนี้อยู่ใน Housing_loan แล้วหรือยัง
+            instance = Housing_loan.objects.filter(emp_id=employee).first()
+            serializer = Housing_loanSerializer(instance, data=data)
+            if serializer.is_valid():
+                serializer.save()
+                if instance:
+                    summary['update'] += 1
+                    status = 'updated'
+                else:
+                    summary['insert'] += 1
+                    status = 'inserted'
+            else:
+                details.append({
+                    'row': index + 2,
+                    'status': 'error',
+                    'emp_name': emp_name,
+                    'errors': serializer.errors
+                })
+                summary['errors'] += 1
+                continue
+
+            details.append({
+                'row': index + 2,
+                'status': status,
+                'emp_name': emp_name,
+                'emp_id': employee.pk
+            })
+
+        except Exception as e:
+            details.append({
+                'row': index + 2,
+                'status': 'error',
+                'emp_name': emp_name,
+                'errors': {'exception': str(e)}
+            })
+            summary['errors'] += 1
+            continue
+
+    return JsonResponse({
+        'success': True,
+        'message': 'ນຳເຂົ້າຂໍ້ມູນສຳເລັດ',
+        'summary': summary,
+        'details': details
+    })
+@api_view(['POST'])
+def import_coopertive_excel(request):
+    excel_file = request.FILES.get('file')
+    if not excel_file:
+        return JsonResponse({'success': False, 'message': 'ບໍ່ພົບໄຟລ໌ Excel'})
+    # print(f"✅ File received: {excel_file.name}")
+
+    # ✅ อ่าน Excel
+    df = pd.read_excel(excel_file)
+    # print(f"✅ Excel loaded successfully ({len(df)} rows)")
+
+    # ✅ ตรวจสอบว่ามีคอลัมน์ emp_name หรือ emp_id
+    if 'emp_name' not in df.columns and 'emp_id' not in df.columns:
+        return JsonResponse({
+            'success': False,
+            'message': 'ໄຟລ໌ຕ້ອງມີຄ່າ emp_name ຫຼື emp_id'
+        })
+
+    summary = {'total_rows': len(df), 'insert': 0, 'update': 0, 'errors': 0}
+    details = []
+
+    for index, row in df.iterrows():
+        emp_name = row.get('emp_name')
+        emp_id = row.get('emp_id')
+
+        try:
+            # ✅ หา Employee instance
+            employee = None
+            if emp_name and pd.notna(emp_name):
+                employee = Employee_lcic.objects.filter(lao_name=str(emp_name).strip()).first()
+            elif emp_id and pd.notna(emp_id):
+                employee = Employee_lcic.objects.filter(pk=int(emp_id)).first()
+
+            if not employee:
+                details.append({
+                    'row': index + 2,
+                    'status': 'error',
+                    'emp_name': emp_name or emp_id,
+                    'errors': {'emp_id': ['Employee not found.']}
+                })
+                summary['errors'] += 1
+                continue
+
+            # ✅ แปลงค่าตัวเลข (ป้องกัน error InvalidOperation)
+            def to_decimal(value):
+                try:
+                    if pd.isna(value):
+                        return Decimal('0.00')
+                    return Decimal(str(value).replace(',', '').strip())
+                except (InvalidOperation, ValueError):
+                    return Decimal('0.00')
+
+            data = {
+                'emp_id': employee.pk,  # ใช้ id ที่หาได้
+                'loan_amount': str(row.get('loan_amount', '')).strip(),
+                'interest': to_decimal(row.get('interest')),
+                'deposit': to_decimal(row.get('deposit')),
+                'total_Saving': to_decimal(row.get('total_Saving')),
+            }
+
+            # ✅ ตรวจสอบว่ามีพนักงานนี้อยู่ใน Housing_loan แล้วหรือยัง
+            instance = Saving_cooperative.objects.filter(emp_id=employee).first()
+            serializer = Saving_cooperativeSerializer(instance, data=data)
+            if serializer.is_valid():
+                serializer.save()
+                if instance:
+                    summary['update'] += 1
+                    status = 'updated'
+                else:
+                    summary['insert'] += 1
+                    status = 'inserted'
+            else:
+                details.append({
+                    'row': index + 2,
+                    'status': 'error',
+                    'emp_name': emp_name,
+                    'errors': serializer.errors
+                })
+                summary['errors'] += 1
+                continue
+
+            details.append({
+                'row': index + 2,
+                'status': status,
+                'emp_name': emp_name,
+                'emp_id': employee.pk
+            })
+
+        except Exception as e:
+            details.append({
+                'row': index + 2,
+                'status': 'error',
+                'emp_name': emp_name,
+                'errors': {'exception': str(e)}
+            })
+            summary['errors'] += 1
+            continue
+
+    return JsonResponse({
+        'success': True,
+        'message': 'ນຳເຂົ້າຂໍ້ມູນສຳເລັດ',
+        'summary': summary,
+        'details': details
+    })
+
+class Housing_loan_historyView(APIView):
+
+    def delete(self, request, year_month=None):
+        try:
+            if not year_month:
+                return Response({
+                    'success': False,
+                    'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            year, month = year_month.split('-')
+            deleted_count, _ = Housing_loan_history.objects.filter(
+                date__year=year, date__month=month
+            ).delete()
+
+            if deleted_count > 0:
+                return Response({
+                    'success': True,
+                    'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ',
+                    'deleted_count': deleted_count
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except ValueError:
+            return Response({
+                'success': False,
+                'error': 'ຮູບແບບປີ-ເດືອນບໍ່ຖືກຕ້ອງ (ຕ້ອງເປັນ YYYY-MM)'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'ຜິດພາດ: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class Housing_loan_historyListCreate(generics.ListCreateAPIView):
+    queryset = Housing_loan_history.objects.all()
+    serializer_class = housing_loan_historyserializer
+
+    def create(self, request, *args, **kwargs):
+        # ກວດວ່າຂໍ້ມູນທີ່ສົ່ງມາເປັນ list ຫຼືບໍ່
+        is_many = isinstance(request.data, list)
+
+        serializer = self.get_serializer(data=request.data, many=is_many)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class Housing_loan_historyRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Housing_loan_history.objects.all()
+    serializer_class = housing_loan_historyserializer
+
 # User Menu View
 class UserMenuDetail(generics.RetrieveAPIView):
     serializer_class = UserMenuSerializer
@@ -716,12 +975,12 @@ class document_general_SearchView(APIView):
 
 class EmployeeInfoAPI(APIView):
     def get(self, request):
-        users = SystemUser.objects.select_related('Department', 'Employee').all()
+        users = SystemUser.objects.select_related('department', 'Employee').all()
         employee_data = []
 
         for user in users:
             employee_data.append({
-                "Department": user.Department.name if hasattr(user.Department, 'name') else "N/A",
+                "department": user.department.name if hasattr(user.department, 'name') else "N/A",
                 "Employee Name (Lao)": user.Employee.lao_name,
                 "Employee Name (Eng)": user.Employee.eng_name,
                 "Nickname": user.Employee.nickname,
@@ -793,38 +1052,63 @@ class Employee_lcicView(APIView):
         if emp_id:
             employee_instances = Employee_lcic.objects.filter(emp_id=emp_id)
         else:
-            employee_instances = Employee_lcic.objects.all().order_by('pos_id')
+            # 🔹 ລະບຸພະນັກງານທີ່ຕ້ອງການໃຫ້ຂຶ້ນກ່ອນ
+            preferred_order = [1, 3, 2, 4, 10, 18, 9, 14, 19, 5, 15, 6, 7, 11, 16, 17, 20, 8, 12, 13, 21,23,22,24,25,]
+
+            # 🔹 ດຶງພະນັກງານທັງໝົດຈາກ DB
+            all_employees = list(
+                Employee_lcic.objects
+                .select_related('pos_id', 'department')
+                .prefetch_related(
+                    'personalinformation_set',
+                    'education_set',
+                    'specializededucation_set',
+                    'politicaltheoryeducation_set',
+                    'foreignlanguage_set',
+                    'workexperience_set',
+                    'trainingcourse_set',
+                    'award_set',
+                    'disciplinaryaction_set',
+                    'familymember_set',
+                    'evaluation_set'
+                )
+            )
+
+            # 🔹 ແຍກຄົນທີ່ຖືກເລືອກກັບຄົນທີ່ເຫຼືອ
+            selected = [e for e in all_employees if e.emp_id in preferred_order]
+            others = [e for e in all_employees if e.emp_id not in preferred_order]
+
+            # 🔹 ຈັດລຳດັບຄົນທີ່ເລືອກຕາມ list preferred_order
+            selected.sort(key=lambda e: preferred_order.index(e.emp_id))
+
+            # 🔹 ລວມລາຍຊື່: ຄົນທີ່ເລືອກຂຶ້ນກ່ອນ + ຄົນທີ່ເຫຼືອຕໍ່ທ້າຍ
+            employee_instances = selected + others
+
+        # ✅ ສ້າງ response JSON
         response_data = []
         for employee in employee_instances:
-            emp_id = employee.emp_id
-
-            personal_instances = PersonalInformation.objects.filter(emp_id=emp_id)
-            education_instances = Education.objects.filter(emp_id=emp_id)
-            specialized_instances = SpecializedEducation.objects.filter(emp_id=emp_id)
-            political_instances = PoliticalTheoryEducation.objects.filter(emp_id=emp_id)
-            language_instances = ForeignLanguage.objects.filter(emp_id=emp_id)
-            work_instances = WorkExperience.objects.filter(emp_id=emp_id)
-            training_instances = TrainingCourse.objects.filter(emp_id=emp_id)
-            award_instances = Award.objects.filter(emp_id=emp_id)
-            disciplinary_instances = DisciplinaryAction.objects.filter(emp_id=emp_id)
-            family_instances = FamilyMember.objects.filter(emp_id=emp_id)
-            evaluation_instance = Evaluation.objects.filter(emp_id=emp_id).first()
+            evaluation_instance = getattr(employee, 'evaluation_set', None).first() \
+                if hasattr(employee, 'evaluation_set') else None
 
             response_data.append({
                 "employee": EmployeeSerializer(employee).data,
-                "personal_information": PersonalInformationSerializer(personal_instances, many=True).data,
-                "education": EducationSerializer(education_instances, many=True).data,
-                "specialized_education": SpecializedEducationSerializer(specialized_instances, many=True).data,
-                "political_theory_education": PoliticalTheoryEducationSerializer(political_instances, many=True).data,
-                "foreign_languages": ForeignLanguageSerializer(language_instances, many=True).data,
-                "work_experiences": WorkExperienceSerializer(work_instances, many=True).data,
-                "training_courses": TrainingCourseSerializer(training_instances, many=True).data,
-                "awards": AwardSerializer(award_instances, many=True).data,
-                "disciplinary_actions": DisciplinaryActionSerializer(disciplinary_instances, many=True).data,
-                "family_members": FamilyMemberSerializer(family_instances, many=True).data,
+                "personal_information": PersonalInformationSerializer(employee.personalinformation_set.all(), many=True).data,
+                "education": EducationSerializer(employee.education_set.all(), many=True).data,
+                "specialized_education": SpecializedEducationSerializer(employee.specializededucation_set.all(), many=True).data,
+                "political_theory_education": PoliticalTheoryEducationSerializer(employee.politicaltheoryeducation_set.all(), many=True).data,
+                "foreign_languages": ForeignLanguageSerializer(employee.foreignlanguage_set.all(), many=True).data,
+                "work_experiences": WorkExperienceSerializer(employee.workexperience_set.all(), many=True).data,
+                "training_courses": TrainingCourseSerializer(employee.trainingcourse_set.all(), many=True).data,
+                "awards": AwardSerializer(employee.award_set.all(), many=True).data,
+                "disciplinary_actions": DisciplinaryActionSerializer(employee.disciplinaryaction_set.all(), many=True).data,
+                "family_members": FamilyMemberSerializer(employee.familymember_set.all(), many=True).data,
                 "evaluation": EvaluationSerializer(evaluation_instance).data if evaluation_instance else None,
             })
+
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+
 
     def save_related_data(self, serializer_class, dataset, emp_id):
         for item in dataset:
@@ -1199,74 +1483,7 @@ class Employee_lcicView(APIView):
     #     except Exception as e:
     #         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class permission_lcic_View(APIView):
-    def get(self, request, sta_id=None):
-        if sta_id:
-            try:
-                sta_id = Status.objects.get(sta_id=sta_id)
-                serializer = StatusSerializer(sta_id)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except Status.DoesNotExist:
-                return Response({"error": "Status_lcic not found"}, status=status.HTTP_404_NOT_FOUND)
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            sta_id = Status.objects.all()
-            serializer = StatusSerializer(sta_id, many=True)
-            return Response(serializer.data)
-
-    def post(self, request):
-        # ປະມວນຜົນຂໍ້ມູນທີ່ສົ່ງມາຜ່ານ Serializer
-        serializer = StatusSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()  # ບັນທຶກຂໍ້ມູນໃນ Database
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def put(self, request, sta_id):
-        # authentication_classes = [CustomJWTAuthentication]  # Use custom authentication
-        # permission_classes = [IsAuthenticated]  # Require authentication
-        try:
-            # ຄົ້ນຫາ Document ທີ່ຈະອັບເດດ
-            Sid = Status.objects.get(sta_id=sta_id)
-        except Status.DoesNotExist:
-            return Response(
-                {"error": f"Status with ID {sta_id} not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # ອັບເດດຂໍ້ມູນໃນ Database ຜ່ານ Serializer
-        serializer = StatusSerializer(Sid, data=request.data, partial=True)  # partial=True ສຳລັບອັບເດດບາງສ່ວນ
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    def delete(self, request, sta_id):
-        try:
-            # ຄົ້ນຫາ Employee ດ້ວຍ emp_id
-            Sid = Status.objects.get(sta_id=sta_id)
-            Sid.delete()  # ລຶບຂໍ້ມູນຈາກ Database
-            return Response({"message": f"Status with ID {sta_id} deleted successfully."}, status=status.HTTP_200_OK)
-        except Status.DoesNotExist:
-            return Response({"error": f"Status with ID {sta_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-class sidebar_View(APIView):
-    def get(self, request, sid_id=None):
-        if sid_id:
-            try:
-                sid_id = Sidebar.objects.get(sid_id=sid_id)
-                serializer = SidebarSerializer(sid_id)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except Status.DoesNotExist:
-                return Response({"error": "Sidebar not found"}, status=status.HTTP_404_NOT_FOUND)
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            sid_id = Sidebar.objects.all()
-            serializer = SidebarSerializer(sid_id, many=True)
-            return Response(serializer.data)
 
 from .serializers import UpdateDocSerializer
 from django.shortcuts import get_object_or_404 # type: ignore
@@ -1340,9 +1557,9 @@ class DocumentFormatSearchView(APIView):
         documents = Document_format.objects.all()
         # Apply filters according to actual field names
         if department_name:
-            documents = documents.filter(Department__name__icontains=department_name)
+            documents = documents.filter(department__name__icontains=department_name)
         if department_id:
-            documents = documents.filter(Department_id=department_id)
+            documents = documents.filter(department_id=department_id)
         if not documents.exists():
             return Response(
                 {"message": "No documents found matching your search query."},
@@ -1388,6 +1605,15 @@ class SalaryViewSet(viewsets.ModelViewSet):
     queryset = Salary.objects.all().order_by('pos_id')
     serializer_class = SalarySerializer
 
+# BankAccount CRUD
+class BankAccountListCreate(generics.ListCreateAPIView):
+    queryset = BankAccount.objects.all()
+    serializer_class = BankAccountSerializer
+
+class BankAccountUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = BankAccount.objects.all()
+    serializer_class = BankAccountSerializer
+
 class SubsidyPositionViewSet(viewsets.ModelViewSet):
     queryset = SubsidyPosition.objects.all().order_by('pos_id')
     serializer_class = SubsidyPositionSerializer
@@ -1396,9 +1622,7 @@ class SubsidyYearViewSet(viewsets.ModelViewSet):
     queryset = SubsidyYear.objects.all().order_by('sy_id')
     serializer_class = SubsidyYearSerializer
 
-class AnnualPerformanceGrantViewSet(viewsets.ModelViewSet):
-    queryset = AnnualPerformanceGrant.objects.all()
-    serializer_class = AnnualPerformanceGrantSerializer
+
 
 class SpecialDayViewSet(viewsets.ModelViewSet):
     queryset = SpecialDayGrant.objects.all().order_by('sdg_id')
@@ -1448,8 +1672,8 @@ class MobilePhoneSubsidy_empAPIView(APIView):
     def get_status(self, obj):
         now = timezone.now()
         exists = MobilePhoneSubsidy_emp_History.objects.filter(
-            date_insert__year=now.year,
-            date_insert__month=now.month
+
+            date__month=now.month
         ).exists()
 
         if exists:
@@ -1512,7 +1736,8 @@ class ovtimeWorkView(APIView):
                 overtime = OvertimeWork.objects.get(ot_id=ot_id)
                 serializer = get_OvertimeWorkSerializer(overtime)
             else:
-                overtime = OvertimeWork.objects.all().order_by('emp_id__pos_id_id')
+                # ✅ views.py
+                overtime = OvertimeWork.objects.all().order_by('emp_id__pos_id_id', 'emp_id__lao_name')
                 serializer = get_OvertimeWorkSerializer(overtime, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except OvertimeWork.DoesNotExist:
@@ -1520,16 +1745,23 @@ class ovtimeWorkView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        
     def post(self, request):
         try:
             serializer = get_OvertimeWorkSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save(recorder=request.user)  # 👈 ບັນທຶກ user ທີ່ login
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                serializer.save()
+                return Response(
+                    {"message": "Fuel subsidy created successfully", "fuel_subsidy": serializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
     def put(self, request, ot_id):
         try:
             overtime = OvertimeWork.objects.get(ot_id=ot_id)
@@ -1692,11 +1924,11 @@ def get_position_details(request, emp_id):
     })
 
 class Saving_cooperativeViewSet(viewsets.ModelViewSet):
-    queryset = Saving_cooperative.objects.all().order_by('emp_id')
+    queryset = Saving_cooperative.objects.select_related('emp_id').order_by('emp_id_id')
     serializer_class = Saving_cooperativeSerializer
 
 class health_allowanceViewSet(viewsets.ModelViewSet):
-    queryset = monthly_payment.objects.all().order_by('emp_id')
+    queryset = monthly_payment.objects.select_related('emp_id').order_by('emp_id_id')
     serializer_class = health_allowanceSerializer
 
 class col_policyViewSet(viewsets.ModelViewSet):
@@ -1708,50 +1940,119 @@ class job_mobilityViewSet(viewsets.ModelViewSet):
     serializer_class = job_mobilitySerializer
 
 class welfareViewSet(viewsets.ModelViewSet):
-    queryset = welfare.objects.all().order_by('emp_id')
+    queryset = welfare.objects.all().order_by('wf_id')
     serializer_class = welfareSerializer
 
 class evaluation_scoreViewSet(viewsets.ModelViewSet):
     queryset = evaluation_score.objects.all().order_by('es_id')
     serializer_class = evaluation_scoreSerializer
 class evaluation_score_empAPIView(APIView):
+    # def get_status(self, obj):
+    #     now = timezone.now()
+    #     exists = evaluation_score_emp_history.objects.filter(
+    #         date__month=now.month
+    #     ).exists()
+
+    #     if exists:
+    #         return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
+    #     return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
+    
+    # def get(self, request, emp_id=None):
+    #     if emp_id:
+    #         items = evaluation_score_emp.objects.filter(emp_id=emp_id)
+    #     else:
+    #         items = evaluation_score_emp.objects.all().order_by('emp_id__pos_id')
+
+    #     results = []
+    #     for obj in items:
+    #         serializer = evaluation_score_empSerializer(obj)
+    #         data = serializer.data
+
+    #         # Add extra fields manually
+    #         emp = obj.emp_id
+    #         pos = emp.pos_id if emp else None
+    #         salary_record = Salary.objects.filter(pos_id=pos).first()
+    #         salary = salary_record.SalaryGrade if salary_record else 0
+    #         today = date.today()
+    #         get_status = self.get_status(obj)
+    #         try:
+    #             calclate_str = obj.es_id.calclate if obj.es_id else 0
+    #             total_amount = Decimal(calclate_str) * Decimal(salary)
+    #             today = dt_date.today()
+    #         except Exception:
+    #             total_amount = None
+
+    #         # Combine and append to result
+    #         data.update({
+    #             "date": today,
+    #             "emp_name": emp.lao_name if emp else "",
+    #             "pos_id": pos.pos_id if pos else None,
+    #             "pos_name": pos.name if pos else "",
+    #             "salary": salary,
+    #             "es_type": obj.es_id.es_type if obj.es_id else "",
+    #             "calclate": obj.es_id.calclate if obj.es_id else "",
+    #             "total_amount": total_amount,
+    #             "status": get_status
+    #         })
+    #         results.append(data)
+
+    #     return Response(results, status=status.HTTP_200_OK)
+
+    def get_current_salary(self, emp):
+        """ດຶງເງິນເດືອນປະຈຸບັນ: ຖ້າມີປະຫວັດເພີ່ມເງິນໃຊ້ນັ້ນ, ຖ້າບໍ່ມີໃຊ້ SalaryGrade"""
+        from decimal import Decimal
+        
+        try:
+            latest_increment = SalaryIncrementHistory.objects.filter(
+                emp_id=emp
+            ).order_by('-date').first()
+            
+            if latest_increment:
+                return latest_increment.new_salary  # ໃຊ້ເງິນເດືອນໃໝ່ທີ່ເພີ່ມ
+            else:
+                salary_base = Salary.objects.filter(pos_id=emp.pos_id).first()
+                return salary_base.SalaryGrade if salary_base else Decimal(0)
+        except Exception:
+            return Decimal(0)
+
     def get_status(self, obj):
         now = timezone.now()
         exists = evaluation_score_emp_history.objects.filter(
-            date_insert__year=now.year,
-            date_insert__month=now.month
+            date__month=now.month
         ).exists()
-
         if exists:
             return f"ຄິດໄລ່ເດືອນ {now.month} ແລ້ວ"
         return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
-    
+
     def get(self, request, emp_id=None):
         if emp_id:
             items = evaluation_score_emp.objects.filter(emp_id=emp_id)
         else:
             items = evaluation_score_emp.objects.all().order_by('emp_id__pos_id')
-
+        
         results = []
         for obj in items:
             serializer = evaluation_score_empSerializer(obj)
             data = serializer.data
-
-            # Add extra fields manually
+            
+            # ດຶງຂໍ້ມູນພະນັກງານ
             emp = obj.emp_id
             pos = emp.pos_id if emp else None
-            salary_record = Salary.objects.filter(pos_id=pos).first()
-            salary = salary_record.SalaryGrade if salary_record else 0
+            
+            # ດຶງເງິນເດືອນປະຈຸບັນ (ກວດປະຫວັດເພີ່ມເງິນກ່ອນ)
+            salary = self.get_current_salary(emp) if emp else Decimal(0)
+            
             today = date.today()
             get_status = self.get_status(obj)
+            
+            # ຄິດໄລ່ຍອດເງິນທັງໝົດ
             try:
                 calclate_str = obj.es_id.calclate if obj.es_id else 0
                 total_amount = Decimal(calclate_str) * Decimal(salary)
-                today = dt_date.today()
             except Exception:
                 total_amount = None
-
-            # Combine and append to result
+            
+            # ລວມຂໍ້ມູນ
             data.update({
                 "date": today,
                 "emp_name": emp.lao_name if emp else "",
@@ -1764,7 +2065,7 @@ class evaluation_score_empAPIView(APIView):
                 "status": get_status
             })
             results.append(data)
-
+        
         return Response(results, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -1828,7 +2129,7 @@ class UniformView(APIView):
             date__month=now.month
         ).exists() or uniform_history.objects.filter(
             emp_id=emp_id,
-            date_insert__month=now.month
+            date__month=now.month
         ).exists()
 
         if exists:
@@ -1962,7 +2263,6 @@ def reset_all_saving_cooperatives(request):
             sc.loan_amount = 0
             sc.interest = 0
             sc.deposit = 0
-            sc.Loan_deduction_194 = 0
             sc.date = date.today()
             sc.save()
 
@@ -2018,6 +2318,33 @@ class Overtime_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = Overtime_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class colpolicy_historyView(APIView):
     def get(self, request, emp_id=None):
         try:
@@ -2036,17 +2363,17 @@ class colpolicy_historyView(APIView):
         duplicates = []
 
         for item in data:
-            # เอาเดือน/ปี ปัจจุบันมาใช้แทน date_insert ที่ request ส่งมา
-            now = timezone.now()
-            target_month = now.month
-            target_year = now.year
+            
+            date_obj = datetime.strptime(item['date'], "%Y-%m-%d")
+            target_month = date_obj.month
+            target_year = date_obj.year
 
-            # ดึง records ของ emp_id
+           
             records = colpolicy_history.objects.filter(emp_id=item['emp_id'])
 
             for record in records:
-                # record.date_insert เป็น datetime อยู่แล้ว ไม่ต้อง strptime
-                if record.date_insert.month == target_month and record.date_insert.year == target_year:
+                
+                if record.date.month == target_month and record.date.year == target_year:
                     duplicates.append({
                         'emp_id': item['emp_id'],
                         'month': target_month,
@@ -2068,6 +2395,32 @@ class colpolicy_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = colpolicy_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 class fuel_payment_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -2117,6 +2470,33 @@ class fuel_payment_historyView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = fuel_payment_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -2176,6 +2556,33 @@ class specialday_emp_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = specialday_emp_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class MobilePhoneSubsidy_emp_HistoryView(APIView):
     def get(self, request, emp_id=None):
@@ -2238,6 +2645,32 @@ class MobilePhoneSubsidy_emp_HistoryView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = MobilePhoneSubsidy_emp_History.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class saving_cooperative_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -2265,8 +2698,7 @@ class saving_cooperative_historyView(APIView):
 
             existing_records = saving_cooperative_history.objects.filter(emp_id=item['emp_id'])
             for record in existing_records:
-                record_date = record.date
-                if record_date.month == target_month and record_date.year == target_year:
+                if record.date.month == target_month and record.date.year == target_year:
                     duplicates.append({
                         'emp_id': item['emp_id'],
                         'month': target_month,
@@ -2284,6 +2716,35 @@ class saving_cooperative_historyView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def delete(self, request, year_month=None):
+        try:
+            if not year_month:
+                return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+            year, month = year_month.split('-')
+            deleted_count, _ = saving_cooperative_history.objects.filter(
+                date__year=year, date__month=month
+            ).delete()
+
+            if deleted_count > 0:
+                return Response({
+                    'success': True,
+                    'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'ຜິດພາດ: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class monthly_paymentView(APIView):
     def get(self, request, emp_id=None):
@@ -2351,7 +2812,34 @@ class monthly_payment_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
 
+                year, month = year_month.split('-')
+                deleted_count, _ = monthly_payment_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
 class uniform_historyView(APIView):
     def get(self, request, emp_id=None):
         try:
@@ -2403,6 +2891,33 @@ class uniform_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
+
+                year, month = year_month.split('-')
+                deleted_count, _ = uniform_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class evaluation_score_emp_historyView(APIView):
     def get(self, request, emp_id=None):
@@ -2451,9 +2966,159 @@ class evaluation_score_emp_historyView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, year_month=None):
+            try:
+                if not year_month:
+                    return Response({'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'}, status=status.HTTP_400_BAD_REQUEST)
 
-class test_monly(APIView):
-    @staticmethod
+                year, month = year_month.split('-')
+                deleted_count, _ = evaluation_score_emp_history.objects.filter(
+                    date__year=year, date__month=month
+                ).delete()
+
+                if deleted_count > 0:
+                    return Response({
+                        'success': True,
+                        'message': f'ລົບຂໍ້ມູນເດືອນ {month}/{year} ສຳເລັດ'
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'message': f'ຜິດພາດ: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['DELETE'])
+def delete_all_history_by_month(request, year_month):
+    """
+    ລົບຂໍ້ມູນປະຫວັດທັງໝົດຂອງທຸກຕາຕະລາງໃນເດືອນທີ່ລະບຸ
+    Format: YYYY-MM (ເຊັ່ນ: 2025-10)
+    """
+    try:
+        if not year_month:
+            return Response({
+                'success': False,
+                'error': 'ບໍ່ໄດ້ລະບຸປີ-ເດືອນ'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        year, month = year_month.split('-')
+        
+        # ລາຍການຕາຕະລາງທັງໝົດທີ່ຈະລົບ
+        results = {}
+        total_deleted = 0
+
+        # 1. Overtime History
+        count, _ = Overtime_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['overtime'] = count
+        total_deleted += count
+
+        # 2. COL Policy History
+        count, _ = colpolicy_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['colpolicy'] = count
+        total_deleted += count
+
+        # 3. Fuel Payment History
+        count, _ = fuel_payment_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['fuel'] = count
+        total_deleted += count
+
+        # 4. Special Day History
+        count, _ = specialday_emp_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['specialday'] = count
+        total_deleted += count
+
+        # 5. Mobile Phone Subsidy History
+        count, _ = MobilePhoneSubsidy_emp_History.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['mobile_phone'] = count
+        total_deleted += count
+
+        # 6. Saving Cooperative History
+        count, _ = saving_cooperative_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['saving_coop'] = count
+        total_deleted += count
+
+        # 7. Monthly Payment History
+        count, _ = monthly_payment_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['monthly_payment'] = count
+        total_deleted += count
+
+        # 8. Uniform History
+        count, _ = uniform_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['uniform'] = count
+        total_deleted += count
+
+        # 9. Evaluation Score History
+        count, _ = evaluation_score_emp_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['evaluation'] = count
+        total_deleted += count
+
+        # 10. Housing_loan_history
+        count, _ = Housing_loan_history.objects.filter(
+            date__year=year, date__month=month
+        ).delete()
+        results['hous_loan'] = count
+
+        if total_deleted > 0:
+            return Response({
+                'success': True,
+                'message': f'ລົບຂໍ້ມູນທັງໝົດເດືອນ {month}/{year} ສຳເລັດ',
+                'total_deleted': total_deleted,
+                'details': results
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'success': False,
+                'message': f'ບໍ່ພົບຂໍ້ມູນໃນເດືອນ {month}/{year}',
+                'details': results
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    except ValueError:
+        return Response({
+            'success': False,
+            'error': 'ຮູບແບບປີ-ເດືອນບໍ່ຖືກຕ້ອງ (ຕ້ອງເປັນ YYYY-MM)'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'ຜິດພາດ: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from decimal import Decimal
+from datetime import date
+from django.utils import timezone
+from django.db.models import Prefetch
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+# Import Models ຢູ່ຕົ້ນ
+
+class payroll_monly(APIView):
+    @staticmethod    
     def get_age(emp):
         if not emp or not emp.emp_id:
             return 0
@@ -2463,46 +3128,60 @@ class test_monly(APIView):
             .values_list("age_entry", flat=True)
             .first()
         )
+
+    def get_current_salary(self, emp):
+        """ດຶງເງິນເດືອນປະຈຸບັນ: ຖ້າມີປະຫວັດເພີ່ມເງິນໃຊ້ນັ້ນ, ຖ້າບໍ່ມີໃຊ້ SalaryGrade"""
+        try:
+            latest_increment = SalaryIncrementHistory.objects.filter(emp_id=emp).order_by('-date').first()
+            if latest_increment:
+                return latest_increment.new_salary  # ໃຊ້ເງິນເດືອນໃໝ່ທີ່ເພີ່ມ
+            else:
+                salary_base = Salary.objects.filter(pos_id=emp.pos_id).first()
+                return salary_base.SalaryGrade if salary_base else Decimal(0)
+        except Exception:
+            return Decimal(0)
+    
     def get_1_5(self, emp):
+        """ຄຳນວນເງິນຊ່ວຍເຫຼືອ ປີທີ 1-5 (5,000/ປີ)"""
         age = int(self.get_age(emp))
         if age <= 0:
             return 0
-        y1 = SubsidyYear.objects.filter(sy_id=1).first()
-        return y1.y_subsidy * 5 if y1 else 0
         
+        years_in_range = min(age, 5)  # ສູງສຸດ 5 ປີ
+        y1 = SubsidyYear.objects.filter(sy_id=1).first()
+        return y1.y_subsidy * years_in_range if y1 else 0
+
     def get_6_15(self, emp):
+        """ຄຳນວນເງິນຊ່ວຍເຫຼືອ ປີທີ 6-15 (10,000/ປີ)"""
         age = int(self.get_age(emp))
         if age <= 5:
-            return 0 
-        age_6_15 = age - 5
+            return 0
+        
+        years_in_range = min(age - 5, 10)  # ສູງສຸດ 10 ປີ
         y2 = SubsidyYear.objects.filter(sy_id=2).first()
-        if age_6_15 > 15:
-            return y2.y_subsidy * 10
-        else:
-            return y2.y_subsidy * age_6_15
+        return y2.y_subsidy * years_in_range if y2 else 0
 
     def get_16_25(self, emp):
+        """ຄຳນວນເງິນຊ່ວຍເຫຼືອ ປີທີ 16-25 (15,000/ປີ)"""
         age = int(self.get_age(emp))
         if age <= 15:
-            return 0 
-        age_16_25 = age - 15
-        y3 = SubsidyYear.objects.filter(sy_id=3).first()
-        if age_16_25 > 10:
-            return y3.y_subsidy * 10
-        else:
-            return y3.y_subsidy * age_16_25
+            return 0
         
+        years_in_range = min(age - 15, 10)  # ສູງສຸດ 10 ປີ
+        y3 = SubsidyYear.objects.filter(sy_id=3).first()
+        return y3.y_subsidy * years_in_range if y3 else 0
+
     def get_26(self, emp):
+        """ຄຳນວນເງິນຊ່ວຍເຫຼືອ ປີທີ 26+ (20,000/ປີ)"""
         age = int(self.get_age(emp))
         if age <= 25:
-            return 0 
-        age_26 = age - 25
-        y4 = SubsidyYear.objects.filter(sy_id=4).first()
-        if age_26 > 10:
-            return y4.y_subsidy * 10
-        else:
-            return y4.y_subsidy * age_26
+            return 0
         
+        years_in_range = age - 25  # ບໍ່ຈຳກັດສູງສຸດ
+        y4 = SubsidyYear.objects.filter(sy_id=4).first()
+        return y4.y_subsidy * years_in_range if y4 else 0
+
+
     def get_overtime_history(self, emp):
         if not emp or not emp.emp_id:
             return 0
@@ -2618,6 +3297,22 @@ class test_monly(APIView):
             .values_list("total_amount", flat=True)
             .first()
         ) or 0
+    def get_housing_loan_payment_bol(self, emp):
+        """ດຶງຂໍ້ມູນ payment_bol ຈາກ Housing_loan_history ປະຈຳເດືອນ"""
+        if not emp or not emp.emp_id:
+            return Decimal(0)
+        now = timezone.now()
+        payment_bol = (
+            Housing_loan_history.objects
+            .filter(
+                emp_id=emp.emp_id,
+                date__year=now.year,
+                date__month=now.month
+            )
+            .values_list("payment_bol", flat=True)
+            .first()
+        )
+        return Decimal(payment_bol or 0)
     
     def get_exempt(self, emp):
         income = getattr(emp, "income_before_tax", Decimal(0))
@@ -2684,12 +3379,12 @@ class test_monly(APIView):
         now = timezone.now()
         exists = monthly_payment_history.objects.filter(
             
-            date_insert__month=now.month
+            date__month=now.month
         ).exists()
 
         if exists:
-            return f"ຄິດໄລ່(ເດືອນ {now.month}ແລ້ວ)"
-        return f"ເດືອນ {now.month} ບໍ່ທັນຄິດໄລ່"
+            return f"ປິດຍອດເບີກຈ່າຍ (ເດືອນ {now.month} ແລ້ວ)"
+        return f"ຄິດໄລ່ເງິນເດືອນ {now.month}"
 
     def get(self, request, emp_id=None):
         try:
@@ -2704,8 +3399,8 @@ class test_monly(APIView):
                 employees = base_queryset.filter(emp_id=emp_id).order_by("pos_id")
             else:
                 employees = base_queryset.order_by("pos_id")
+
             pos_ids = employees.values_list("pos_id", flat=True)
-            salary_map = {s.pos_id_id: s for s in Salary.objects.filter(pos_id__in=pos_ids)}
             subsidy_pos_map = {s.pos_id_id: s for s in SubsidyPosition.objects.filter(pos_id__in=pos_ids)}
             welfare_map = {w.emp_id_id: w for w in welfare.objects.filter(emp_id__in=employees.values_list("emp_id", flat=True))}
             today = date.today()
@@ -2723,6 +3418,7 @@ class test_monly(APIView):
             for emp in employees:
                 today = dt_date.today()
                 latest_payment = emp.payments[0] if emp.payments else None
+                salary = self.get_current_salary(emp)
                 pos_id = emp.pos_id_id
                 position = emp.pos_id.name if emp.pos_id else None
                 age = self.get_age(emp)
@@ -2731,7 +3427,7 @@ class test_monly(APIView):
                 get_16_25 = self.get_16_25(emp)
                 get_26 = self.get_26(emp)
                 year_subsidy_total = get_1_5 + get_6_15 + get_16_25 + get_26
-                salary = salary_map.get(pos_id).SalaryGrade if pos_id in salary_map else Decimal(0)
+                
                 wf_emp = welfare_map.get(emp.emp_id).from_emp if emp.emp_id in welfare_map else 0
                 wf_cpn = welfare_map.get(emp.emp_id).from_company if emp.emp_id in welfare_map else 0
                 position_subsidy = subsidy_pos_map.get(pos_id).grant if pos_id in subsidy_pos_map else 0
@@ -2770,10 +3466,12 @@ class test_monly(APIView):
                 loan = saving.loan_amount if saving else 0
                 interest = saving.interest if saving else 0
                 deposit = saving.deposit if saving else 0
-                loan_194 = saving.Loan_deduction_194 if saving else 0
+                
                 saving_total = saving.total_Saving if saving else 0
 
-                salary_payment = Decimal(income_after_tax) + Decimal(child_subsidy_total) + Decimal(health_subsidy) - Decimal(saving_total) + Decimal(loan_194)
+                payment_bol = self.get_housing_loan_payment_bol(emp)
+
+                salary_payment = Decimal(income_after_tax) + Decimal(child_subsidy_total) + Decimal(health_subsidy) - Decimal(saving_total) + Decimal(payment_bol)
                 monthly_income = Decimal(fuel) + Decimal(other_income) + Decimal(salary_payment)
                 get_status = self.get_status(emp)
                 data.append({
@@ -2818,7 +3516,7 @@ class test_monly(APIView):
                     "loan": loan,
                     "interest": interest,
                     "deposit": deposit,
-                    "loan_194": loan_194,
+                    "payment_bol": payment_bol,
                     "saving_total": saving_total,
                     "salary_payment": salary_payment,
                     "monthly_income": monthly_income,
@@ -2829,6 +3527,40 @@ class test_monly(APIView):
         except Exception as exc:
             return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+    def post(self, request, emp_id):
+        try:
+            employee = Employee_lcic.objects.filter(emp_id=emp_id).first()
+            if not employee:
+                return Response({"error": "ບໍ່ພົບພະນັກງານ"}, status=status.HTTP_404_NOT_FOUND)
+
+            salary_base = Salary.objects.filter(pos_id=employee.pos_id).first()
+            if not salary_base:
+                return Response({"error": "ບໍ່ພົບຂໍ້ມູນເງິນພື້ນຖານ"}, status=status.HTTP_404_NOT_FOUND)
+
+            base_salary = Decimal(salary_base.SalaryGrade)
+
+            last_history = SalaryIncrementHistory.objects.filter(emp_id=employee).order_by('-date').first()
+
+            # ຖ້າບໍ່ມີປະຫວັດການເພີ່ມໃດໆ, ໃຫ້ເລີ່ມຈາກຖານ
+            old_salary = last_history.new_salary if last_history else base_salary
+
+            percentage = Decimal('2.00')
+            new_salary = old_salary * (Decimal('1.00') + (percentage / Decimal('100')))
+            SalaryIncrementHistory.objects.create(
+                emp_id=employee,
+                old_salary=old_salary,
+                new_salary=new_salary,
+                percentage=percentage,
+                date=date.today()
+            )
+
+            return Response({
+                "success": True,
+                "message": f"ເພີ່ມເງິນເດືອນສຳເລັດ: ຈາກ {old_salary} ເປັນ {new_salary}"
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # sum total history
 
@@ -3254,3 +3986,18 @@ class sum_monthly_income_history_view(APIView):
         else:
             data = {"monthly_income": qs.aggregate(total=Sum("monthly_income"))["total"] or 0}
         return Response(data)
+    
+
+
+class status_monthly_payment_history_view(APIView):
+    def get(self, request):
+        now = timezone.now()
+        statuses = []
+
+        # ตรวจสอบทุกเดือนในปีปัจจุบัน
+        for month in range(1, 13):
+            exists = monthly_payment_history.objects.filter(date__month=month).exists()
+            if exists:
+                statuses.append({"month": month, "status": f"ຄິດໄລ່ເງິນເດືອນ {month} ສຳເລັດ"})
+
+        return Response(statuses)
